@@ -1,0 +1,6 @@
+{
+  "name": "Incognito Workspace",
+  "description": "A high-performance modern Luau scripting and editing environment built for next-generation Roblox developers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
