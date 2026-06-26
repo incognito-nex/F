@@ -84,6 +84,7 @@ export interface UserSettings {
     smoothCaret: boolean;
     bracketAutocomplete: boolean;
     enableItalics?: boolean;
+    autoScriptSave?: boolean;
   };
   terminal: {
     clearOnRun: boolean;
@@ -129,5 +130,12 @@ export interface UserSettings {
   experimental?: {
     terminalEnabled: boolean;
     multiAccountInjection?: boolean;
+  };
+  performance?: {
+    client: string;
+    unlockFps: string;
+    autoLaunchRoblox: boolean;
+    hideProcessScreenshare: boolean;
+    hideProcessEntirely: boolean;
   };
 }

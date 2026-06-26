@@ -157,15 +157,16 @@ export default function SettingsView({
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [recordingField, setRecordingField] = useState<string | null>(null);
   const [activeSubSection, setActiveSubSection] = useState<string>('editor-section');
+  const isScrollingRef = useRef(false);
+  const scrollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const sections = [
       'editor-section',
-      'terminal-section',
+      'performance-section',
+      ...(settings.experimental?.terminalEnabled ? ['terminal-section'] : []),
       'gitsync-section',
-      'lua-section',
       'theme-section',
-      'profile-section',
       'keybinds-section',
       'advanced-section'
     ];
@@ -177,6 +178,7 @@ export default function SettingsView({
     };
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      if (isScrollingRef.current) return;
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           setActiveSubSection(entry.target.id);
@@ -333,35 +335,61 @@ export default function SettingsView({
         <div className="w-full md:w-14 shrink-0 flex flex-row md:flex-col items-center overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 md:sticky md:top-6 space-x-2 md:space-x-0 md:space-y-3.5 scrollbar-none border-b md:border-b-0 md:border-r border-zinc-200/50 dark:border-zinc-800/40 md:pr-3.5">
           {[
             { id: 'editor-section', label: 'Editor Preferences', icon: Code2 },
+            { id: 'performance-section', label: 'Performance Settings', icon: Sliders },
             ...(settings.experimental?.terminalEnabled ? [{ id: 'terminal-section', label: 'Terminal settings', icon: Terminal }] : []),
             { id: 'gitsync-section', label: 'GitHub Synchronization', icon: Github },
-            { id: 'lua-section', label: 'Lua VM Engines', icon: Zap },
             { id: 'theme-section', label: 'Theming & Layout', icon: Paintbrush },
-            { id: 'profile-section', label: 'Developer Profile', icon: User },
             { id: 'keybinds-section', label: 'Hotkey Keybinds', icon: Key },
             { id: 'advanced-section', label: 'Advanced Settings', icon: Cpu }
           ].map((sec) => {
             const Icon = sec.icon;
             const isActive = activeSubSection === sec.id;
+            const isKeybind = sec.id === 'keybinds-section';
             return (
               <button
                 key={sec.id}
                 type="button"
                 onClick={() => {
-                  const target = document.getElementById(sec.id);
-                  if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  isScrollingRef.current = true;
+                  if (scrollingTimeoutRef.current) {
+                    clearTimeout(scrollingTimeoutRef.current);
                   }
                   setActiveSubSection(sec.id);
+                  const container = document.getElementById('settings-scroll-container');
+                  const target = document.getElementById(sec.id);
+                  if (container && target) {
+                    const containerRect = container.getBoundingClientRect();
+                    const targetRect = target.getBoundingClientRect();
+                    const relativeTop = targetRect.top - containerRect.top + container.scrollTop - 24;
+                    container.scrollTo({
+                      top: relativeTop,
+                      behavior: 'smooth'
+                    });
+                  }
+                  scrollingTimeoutRef.current = setTimeout(() => {
+                    isScrollingRef.current = false;
+                  }, 800);
                 }}
-                className="group relative flex items-center justify-center w-10 h-10 transition-all duration-200 cursor-pointer bg-transparent border-0 outline-none"
+                className="group relative flex items-center justify-center w-10 h-10 transition-all duration-200 cursor-pointer bg-transparent border-0 outline-none hover:scale-[1.05] active:scale-95"
               >
-                <Icon 
-                  size={16} 
-                  className={`transition-all duration-150 transform group-hover:scale-110 group-hover:text-white ${
-                    isActive ? 'text-white' : 'text-zinc-500'
-                  }`} 
-                />
+                {isKeybind ? (
+                  <div 
+                    className={`w-5 h-5 rounded-[4px] border border-b-2 flex items-center justify-center text-[10px] font-mono font-extrabold select-none transition-all duration-150 transform ${
+                      isActive 
+                        ? 'bg-zinc-800 text-white border-white border-b-zinc-400 shadow-[0_2px_0_rgba(255,255,255,0.2)] scale-110' 
+                        : 'bg-zinc-950/40 text-zinc-400 border-zinc-600 border-b-zinc-500 shadow-[0_1.5px_0_rgba(255,255,255,0.1)] group-hover:bg-zinc-900 group-hover:text-white group-hover:border-zinc-400 group-hover:scale-110'
+                    }`}
+                  >
+                    I
+                  </div>
+                ) : (
+                  <Icon 
+                    size={16} 
+                    className={`transition-all duration-150 transform ${
+                      isActive ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'text-zinc-500 hover:text-white group-hover:scale-110'
+                    }`} 
+                  />
+                )}
 
                 {/* Left/Right Floating CSS Tooltip */}
                 <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 text-[10px] font-mono font-bold bg-zinc-900 dark:bg-zinc-950 text-white rounded-md border border-zinc-800/60 shadow-xl opacity-0 scale-90 translate-x-[-10px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-150 whitespace-nowrap z-50">
@@ -590,10 +618,198 @@ export default function SettingsView({
                   />
                 </div>
               </div>
+
+              {/* Auto Script Save Toggle */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Auto Script Save</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Bypass pop-up confirmation and save Lua scripts automatically</span>
+                </div>
+                <div>
+                  <WindowsSwitch
+                    checked={settings.editor.autoScriptSave !== false}
+                    onChange={(checked) => handleUpdate('editor', 'autoScriptSave', checked)}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-group: LUA SYNTAX ENGINE PROFILES */}
+            <div className="pt-6 space-y-3">
+              <div className="flex items-center space-x-2">
+                <Code size={13} style={{ color: theme.accent }} />
+                <h4 className="text-[11px] font-bold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
+                  Lua Syntax Engine Profiles
+                </h4>
+              </div>
+              
+              <div className="divide-y divide-zinc-200/60 dark:divide-zinc-800/40 border-b border-zinc-200/60 dark:border-zinc-800/40">
+                {syntaxes.map((syn) => {
+                  const isActive = settings.syntax.engineId === syn.id;
+                  return (
+                    <div key={syn.id} className="flex items-center justify-between py-3">
+                      <div className="text-left pr-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-semibold font-sans block" style={{ color: theme.textMain }}>{syn.name}</span>
+                          {isActive && (
+                            <span 
+                              className="text-[8px] px-1.5 py-0.5 rounded font-mono font-extrabold tracking-widest uppercase"
+                              style={{ backgroundColor: theme.accent, color: theme.isLight ? '#ffffff' : '#000000' }}
+                            >
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] block text-zinc-500 font-mono mt-0.5 uppercase">
+                          Keywords: {syn.colors.keywords} • Globals: {syn.colors.functions} • Comments: {syn.colors.comments}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-3 shrink-0">
+                        <div className="flex items-center -space-x-1">
+                          <span className="w-2.5 h-2.5 rounded-full border border-zinc-800/60" style={{ backgroundColor: syn.colors.keywords }} />
+                          <span className="w-2.5 h-2.5 rounded-full border border-zinc-800/60" style={{ backgroundColor: syn.colors.functions }} />
+                          <span className="w-2.5 h-2.5 rounded-full border border-zinc-800/60" style={{ backgroundColor: syn.colors.strings }} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdate('syntax', 'engineId', syn.id)}
+                          style={{ 
+                            backgroundColor: isActive ? `${theme.accent}1c` : 'transparent',
+                            color: isActive ? theme.accent : theme.textMuted,
+                            borderColor: isActive ? theme.accent : theme.borderColor
+                          }}
+                          className="px-3.5 py-1.5 border rounded-xl font-sans text-[11px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition cursor-pointer"
+                        >
+                          {isActive ? 'Active' : 'Select'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* CATEGORY 2: TERMINAL (Conditional) */}
+          {/* CATEGORY 2: PERFORMANCE SETTINGS */}
+          <div id="performance-section" className="space-y-2 scroll-mt-6">
+            <div className="pb-2 border-b border-zinc-200/40 dark:border-zinc-800/20 flex items-center space-x-2">
+              <Sliders size={14} style={{ color: theme.accent }} />
+              <h3 className="text-xs font-extrabold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
+                Performance Settings
+              </h3>
+            </div>
+            
+            <div className="divide-y divide-zinc-200/60 dark:divide-zinc-800/40 border-b border-zinc-200/60 dark:border-zinc-800/40">
+              
+              {/* Choose Client */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Execution Client Core</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Choose target architecture/client profile for Lua compilation</span>
+                </div>
+                <div className="w-48 shrink-0">
+                  <CustomSelect
+                    value={settings.performance?.client || 'Web Client (64-bit)'}
+                    onChange={(val) => handleUpdate('performance', 'client', val)}
+                    options={[
+                      { value: 'Web Client (64-bit)', label: 'Web Client (64-bit)' },
+                      { value: 'UWP App Store Client', label: 'UWP App Client' },
+                      { value: 'Mobile Emulator Engine', label: 'Mobile Emulator Core' },
+                      { value: 'Incognito Internal Debugger', label: 'Internal Debug Core' }
+                    ]}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Theme/Lighting selection (the lighting menu!) */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Client Lighting Style (Theme)</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Select the lighting and theme preset profile</span>
+                </div>
+                <div className="w-48 shrink-0">
+                  <CustomSelect
+                    value={settings.appearance.themeId}
+                    onChange={(val) => onSetTheme(val)}
+                    options={themes.map(t => ({ value: t.id, label: t.name }))}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Unlock FPS */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Unlock Client Frame Rate (FPS)</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Unlock or set target frames per second limitation</span>
+                </div>
+                <div className="w-48 shrink-0">
+                  <CustomSelect
+                    value={settings.performance?.unlockFps || 'Unlimited'}
+                    onChange={(val) => handleUpdate('performance', 'unlockFps', val)}
+                    options={[
+                      { value: '60', label: '60 FPS (V-Sync)' },
+                      { value: '144', label: '144 FPS (High-Hz)' },
+                      { value: '240', label: '240 FPS (Ultra)' },
+                      { value: '360', label: '360 FPS (Competitive)' },
+                      { value: 'Unlimited', label: 'Unlimited (Maximum)' }
+                    ]}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Auto Launch Roblox */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Auto Launch Roblox Client</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Automatically initialize Roblox process upon running sandbox script</span>
+                </div>
+                <div>
+                  <WindowsSwitch
+                    checked={settings.performance?.autoLaunchRoblox !== false}
+                    onChange={(checked) => handleUpdate('performance', 'autoLaunchRoblox', checked)}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Hide process during screenshare */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Anti-Capture OBS Shield</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Hide sandbox interface during recording or active screensharing sessions</span>
+                </div>
+                <div>
+                  <WindowsSwitch
+                    checked={!!settings.performance?.hideProcessScreenshare}
+                    onChange={(checked) => handleUpdate('performance', 'hideProcessScreenshare', checked)}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Hide process entirely */}
+              <div className="flex items-center justify-between py-3.5">
+                <div className="text-left pr-4">
+                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Stealth Process Disguise</span>
+                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Instantly hide process entirely from desktop with Ctrl+Shift+I keybind</span>
+                </div>
+                <div>
+                  <WindowsSwitch
+                    checked={!!settings.performance?.hideProcessEntirely}
+                    onChange={(checked) => handleUpdate('performance', 'hideProcessEntirely', checked)}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* CATEGORY 3: TERMINAL (Conditional) */}
           {settings.experimental?.terminalEnabled && (
             <div id="terminal-section" className="space-y-2 scroll-mt-6">
               <div className="pb-2 border-b border-zinc-200/40 dark:border-zinc-800/20 flex items-center space-x-2">
@@ -835,61 +1051,6 @@ export default function SettingsView({
             </div>
           </div>
 
-          {/* CATEGORY 4: LUA SYNTAX */}
-          <div id="lua-section" className="space-y-2 scroll-mt-6">
-            <div className="pb-2 border-b border-zinc-200/40 dark:border-zinc-800/20 flex items-center space-x-2">
-              <Code size={14} style={{ color: theme.accent }} />
-              <h3 className="text-xs font-extrabold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
-                Lua Syntax Engine Profiles
-              </h3>
-            </div>
-            
-            <div className="divide-y divide-zinc-200/60 dark:divide-zinc-800/40 border-b border-zinc-200/60 dark:border-zinc-800/40">
-              {syntaxes.map((syn) => {
-                const isActive = settings.syntax.engineId === syn.id;
-                return (
-                  <div key={syn.id} className="flex items-center justify-between py-3.5">
-                    <div className="text-left pr-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>{syn.name}</span>
-                        {isActive && (
-                          <span 
-                            className="text-[8px] px-1.5 py-0.5 rounded font-mono font-extrabold tracking-widest uppercase"
-                            style={{ backgroundColor: theme.accent, color: theme.isLight ? '#ffffff' : '#000000' }}
-                          >
-                            ACTIVE
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] block text-zinc-500 font-mono mt-0.5 uppercase">
-                        Keywords: {syn.colors.keywords} • Globals: {syn.colors.functions} • Comments: {syn.colors.comments}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3 shrink-0">
-                      <div className="flex items-center -space-x-1">
-                        <span className="w-2.5 h-2.5 rounded-full border border-zinc-800/60" style={{ backgroundColor: syn.colors.keywords }} />
-                        <span className="w-2.5 h-2.5 rounded-full border border-zinc-800/60" style={{ backgroundColor: syn.colors.functions }} />
-                        <span className="w-2.5 h-2.5 rounded-full border border-zinc-800/60" style={{ backgroundColor: syn.colors.strings }} />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdate('syntax', 'engineId', syn.id)}
-                        style={{ 
-                          backgroundColor: isActive ? `${theme.accent}1c` : 'transparent',
-                          color: isActive ? theme.accent : theme.textMuted,
-                          borderColor: isActive ? theme.accent : theme.borderColor
-                        }}
-                        className="px-4 py-1.5 border rounded-xl font-sans text-xs font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition cursor-pointer"
-                      >
-                        {isActive ? 'Active' : 'Select'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* CATEGORY 5: THEMES & APPEARANCE */}
           <div id="theme-section" className="space-y-2 scroll-mt-6">
             <div className="pb-2 border-b border-zinc-200/40 dark:border-zinc-800/20 flex items-center space-x-2">
@@ -1003,96 +1164,19 @@ export default function SettingsView({
             </div>
           </div>
 
-          {/* CATEGORY 6: DEVELOPER PROFILE */}
-          <div id="profile-section" className="space-y-2 scroll-mt-6">
-            <div className="pb-2 border-b border-zinc-200/40 dark:border-zinc-800/20 flex items-center space-x-2">
-              <User size={14} style={{ color: theme.accent }} />
-              <h3 className="text-xs font-extrabold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
-                Developer Profile
-              </h3>
-            </div>
-            
-            <div className="divide-y divide-zinc-200/60 dark:divide-zinc-800/40 border-b border-zinc-200/60 dark:border-zinc-800/40">
-              {/* Avatar Row */}
-              <div className="flex items-center justify-between py-3.5">
-                <div className="text-left pr-4 flex items-center space-x-4">
-                  <img 
-                    src={settings.account.avatarUrl} 
-                    alt="pfp" 
-                    className="w-12 h-12 rounded-xl object-cover border border-zinc-800/60 shrink-0" 
-                  />
-                  <div>
-                    <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Avatar URL</span>
-                    <span className="text-[11px] block" style={{ color: theme.textMuted }}>Direct image web URL used for profile avatar photo</span>
-                  </div>
-                </div>
-                <div className="w-64 shrink-0">
-                  <input
-                    type="text"
-                    value={settings.account.avatarUrl}
-                    onChange={(e) => handleUpdate('account', 'avatarUrl', e.target.value)}
-                    className={`w-full border rounded-xl py-2 px-3 text-xs font-mono focus:outline-none ${inputBg}`}
-                  />
-                </div>
-              </div>
-
-              {/* Username Row */}
-              <div className="flex items-center justify-between py-3.5">
-                <div className="text-left pr-4">
-                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Profile Name</span>
-                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Visual name display shown on terminals and header panels</span>
-                </div>
-                <div className="w-64 shrink-0">
-                  <input
-                    type="text"
-                    value={settings.account.username}
-                    onChange={(e) => {
-                      handleUpdate('account', 'username', e.target.value);
-                      localStorage.setItem('user_onboarded_name', e.target.value);
-                    }}
-                    className={`w-full border rounded-xl py-2 px-3 text-xs font-sans focus:outline-none ${inputBg}`}
-                  />
-                </div>
-              </div>
-
-              {/* Title Row */}
-              <div className="flex items-center justify-between py-3.5">
-                <div className="text-left pr-4">
-                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Professional Title Badge</span>
-                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Specify your custom role subtitle (e.g. Exploits Architect)</span>
-                </div>
-                <div className="w-64 shrink-0">
-                  <input
-                    type="text"
-                    value={settings.account.badge}
-                    onChange={(e) => handleUpdate('account', 'badge', e.target.value)}
-                    className={`w-full border rounded-xl py-2 px-3 text-xs font-sans focus:outline-none ${inputBg}`}
-                  />
-                </div>
-              </div>
-
-              {/* Bio Row */}
-              <div className="flex items-center justify-between py-3.5">
-                <div className="text-left pr-4">
-                  <span className="text-[13px] font-semibold font-sans block" style={{ color: theme.textMain }}>Developer Bio</span>
-                  <span className="text-[11px] block" style={{ color: theme.textMuted }}>Brief text summarizing your background details</span>
-                </div>
-                <div className="w-64 shrink-0">
-                  <textarea
-                    rows={2}
-                    value={settings.account.bio}
-                    onChange={(e) => handleUpdate('account', 'bio', e.target.value)}
-                    className={`w-full border rounded-xl py-2 px-3 text-xs font-sans focus:outline-none ${inputBg}`}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* CATEGORY 7: KEYBINDS */}
           <div id="keybinds-section" className="space-y-2 scroll-mt-6">
             <div className="pb-2 border-b border-zinc-200/40 dark:border-zinc-800/20 flex items-center space-x-2">
-              <Layers size={14} style={{ color: theme.accent }} />
+              <div 
+                className="w-4.5 h-4.5 rounded-[4px] border border-b-2 flex items-center justify-center text-[11px] font-extrabold font-mono shrink-0 select-none shadow-xs"
+                style={{ 
+                  borderColor: theme.accent, 
+                  color: theme.accent,
+                  backgroundColor: `${theme.accent}12`
+                }}
+              >
+                I
+              </div>
               <h3 className="text-xs font-extrabold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
                 Hotkey Keybinds
               </h3>

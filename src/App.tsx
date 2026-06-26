@@ -14,7 +14,7 @@ import { defaultSyntaxes } from './data/defaultSyntaxes';
 
 import LoadingScreen from './components/LoadingScreen';
 import CommandPalette from './components/CommandPalette';
-import Sidebar, { ProfileMenu } from './components/Sidebar';
+import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import FileExplorer from './components/FileExplorer';
 import CodeEditor from './components/CodeEditor';
@@ -826,6 +826,7 @@ print("ESP script loaded!")`;
         wordWrap: 'on' as const,
         minimap: false,
         autoSave: true,
+        autoScriptSave: true,
         lineNumbers: 'on' as const,
         cursorBlinking: 'smooth',
         cursorStyle: 'line',
@@ -875,6 +876,13 @@ print("ESP script loaded!")`;
         terminalEnabled: false,
         multiAccountInjection: false,
       },
+      performance: {
+        client: 'Web Client (64-bit)',
+        unlockFps: 'Unlimited',
+        autoLaunchRoblox: true,
+        hideProcessScreenshare: false,
+        hideProcessEntirely: false,
+      },
     };
 
     const saved = localStorage.getItem('incognito_settings');
@@ -909,6 +917,7 @@ print("ESP script loaded!")`;
             ...(parsed.keybinds || {})
           },
           experimental: { ...defaults.experimental, ...parsed.experimental },
+          performance: { ...defaults.performance, ...parsed.performance },
         };
       } catch (err) {
         return defaults;
@@ -936,6 +945,7 @@ print("ESP script loaded!")`;
     },
   ]);
   const [terminalHeight, setTerminalHeight] = useState(160);
+  const [isStealthMode, setIsStealthMode] = useState(false);
 
   // Sync to local storage
   useEffect(() => {
@@ -1002,6 +1012,16 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
         obfuscateScript: 'Ctrl+Shift+O',
         deobfuscateScript: 'Ctrl+Shift+D'
       };
+
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        setIsStealthMode(prev => {
+          const newState = !prev;
+          triggerToast(newState ? 'Stealth Mode Activated (Process Hidden)' : 'Stealth Mode Deactivated', 'info');
+          return newState;
+        });
+        return;
+      }
 
       const target = e.target as HTMLElement;
       const isInputFocused = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
@@ -1426,6 +1446,15 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
     );
   }
 
+  if (isStealthMode) {
+    return (
+      <div 
+        className="h-screen w-screen bg-transparent select-none cursor-default" 
+        style={{ backgroundColor: 'rgba(0,0,0,0)' }}
+      />
+    );
+  }
+
   return (
     <MotionConfig reducedMotion={settings.appearance.animationsEnabled === false ? "always" : "user"}>
       <div
@@ -1495,16 +1524,8 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                 />
               </div>
 
-              {/* Right part: Profile button + Windows-like window controls */}
+              {/* Right part: Windows-like window controls */}
               <div className="flex items-center space-x-4">
-                <ProfileMenu
-                  theme={currentTheme}
-                  settings={settings}
-                  setSettings={setSettings}
-                />
-
-                <div className="w-[1px] h-4 bg-zinc-800/40" />
-
                 <div className="flex items-center space-x-1">
                   {/* Hide / Minimize */}
                   <button 

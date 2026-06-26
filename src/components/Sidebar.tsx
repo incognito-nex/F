@@ -39,7 +39,7 @@ export default function Sidebar({
           {menuItems.map((item) => {
             const isActive = activeSection === item.id;
             const isHovered = hoveredId === item.id;
-            const isExpanded = isHovered;
+            const isExpanded = isActive;
 
             return (
               <motion.button
@@ -49,10 +49,11 @@ export default function Sidebar({
                 onClick={() => setActiveSection(item.id)}
                 onMouseEnter={() => setHoveredId(item.id)}
                 onMouseLeave={() => setHoveredId(null)}
+                whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.96 }}
                 transition={{
                   type: "tween",
-                  duration: 0.45,
+                  duration: 0.25,
                   ease: "easeInOut"
                 }}
                 className="h-10 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border border-transparent bg-transparent relative cursor-pointer outline-none transition-colors duration-300 hover:bg-zinc-800/10 dark:hover:bg-white/10"

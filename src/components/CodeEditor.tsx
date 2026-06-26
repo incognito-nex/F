@@ -652,8 +652,8 @@ function CodeEditorInner({
         }));
       }
 
-      // If autosave is on, debounce updating local database to avoid freezing the editor
-      if (settings.editor.autoSave) {
+      // If autosave or autoScriptSave is on, debounce updating local database to avoid freezing the editor
+      if (settings.editor.autoSave || settings.editor.autoScriptSave !== false) {
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
         }
@@ -706,7 +706,7 @@ function CodeEditorInner({
     if (e) e.stopPropagation();
 
     const targetTab = tabs.find(t => t.fileId === fId);
-    if (targetTab?.isUnsaved && !settings.editor.autoSave) {
+    if (targetTab?.isUnsaved && !settings.editor.autoSave && settings.editor.autoScriptSave === false) {
       if (!confirm('You have unsaved workspace logs. Lose these changes?')) {
         return;
       }
@@ -1010,7 +1010,7 @@ function CodeEditorInner({
 
                     {/* Close/Status element - Always visible on active tab, hovered on inactive */}
                     <div className="w-4 h-4 flex items-center justify-center shrink-0 relative">
-                      {isUnsaved && !settings.editor.autoSave ? (
+                      {isUnsaved && !settings.editor.autoSave && settings.editor.autoScriptSave === false ? (
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse group-hover:opacity-0 transition-opacity duration-75" />
                       ) : null}
                       <button
@@ -1062,7 +1062,7 @@ function CodeEditorInner({
                   id: newId,
                   name: finalName,
                   type: 'file',
-                  parentId: null,
+                  parentId: 'folder-workspace',
                   content: '-- New script in workspace\nprint("Hello World")\n',
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),

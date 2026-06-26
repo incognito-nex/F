@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   FileText, Plus, Star, ArrowRight,
-  Terminal, Settings, Flame, Cpu, Activity, Zap, CheckCircle2, ExternalLink, GitBranch
+  Terminal, Settings, Flame, Cpu, Activity, Zap, CheckCircle2, ExternalLink, GitBranch,
+  LayoutGrid, Sparkles, Gauge, History
 } from 'lucide-react';
 import { FileNode, AppTheme, UserSettings } from '../types';
 
@@ -18,6 +19,19 @@ interface DashboardProps {
   injectionLog?: string;
   triggerSimulation?: () => void;
 }
+
+const DiscordLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg 
+    viewBox="0 0 127.14 96.36" 
+    className={props.className} 
+    style={props.style}
+    width={props.width || "16"} 
+    height={props.height || "16"} 
+    fill="currentColor"
+  >
+    <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.88-.65,1.72-1.34,2.51-2a75.58,75.58,0,0,0,73,0c.79.71,1.63,1.4,2.51,2a68.1,68.1,0,0,1-10.5,5A77.89,77.89,0,0,0,111.82,96.4a105.73,105.73,0,0,0,12.55-18.83C129.83,50.12,123.34,27.28,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
+  </svg>
+);
 
 export default function Dashboard({
   files,
@@ -164,30 +178,29 @@ export default function Dashboard({
     <div className="flex-1 flex min-h-0" style={{ backgroundColor: theme.bodyBg }}>
       {/* Home Quick Access Sidebar Menu - No background, logos highlight white on hover/active */}
       <div 
-        className="w-16 flex flex-col items-center py-6 border-r shrink-0 gap-6 select-none"
-        style={{ borderColor: theme.borderColor }}
+        className="w-16 flex flex-col justify-center items-center py-6 shrink-0 gap-6 select-none h-full"
       >
         {/* Overview Button */}
         <button
           onClick={() => setActiveHomeTab('overview')}
-          className="relative p-2.5 transition-all group cursor-pointer text-zinc-500 hover:text-white"
+          className="relative p-2.5 transition-all duration-200 group cursor-pointer text-zinc-500 hover:text-white hover:scale-[1.05] flex items-center justify-center"
           title="Overview"
         >
-          <Flame 
+          <Gauge 
             size={18} 
-            className={`transition-all ${activeHomeTab === 'overview' ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'text-zinc-500 group-hover:text-zinc-300'}`} 
+            className={`transition-all duration-150 ${activeHomeTab === 'overview' ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'text-zinc-500 group-hover:text-zinc-300'}`} 
           />
         </button>
 
         {/* Updates Button */}
         <button
           onClick={() => setActiveHomeTab('updates')}
-          className="relative p-2.5 transition-all group cursor-pointer text-zinc-500 hover:text-white"
+          className="relative p-2.5 transition-all duration-200 group cursor-pointer text-zinc-500 hover:text-white hover:scale-[1.05] flex items-center justify-center"
           title="Updates Feed"
         >
-          <Activity 
+          <History 
             size={18} 
-            className={`transition-all ${activeHomeTab === 'updates' ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'text-zinc-500 group-hover:text-zinc-300'}`} 
+            className={`transition-all duration-150 ${activeHomeTab === 'updates' ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'text-zinc-500 group-hover:text-zinc-300'}`} 
           />
         </button>
 
@@ -196,12 +209,13 @@ export default function Dashboard({
           href="https://discord.gg/427WYSChRt"
           target="_blank"
           rel="noopener noreferrer"
-          className="relative p-2.5 transition-all group cursor-pointer text-zinc-500 hover:text-white"
+          className="relative p-2.5 transition-all duration-200 group cursor-pointer text-zinc-500 hover:text-white hover:scale-[1.05] flex items-center justify-center"
           title="Discord Community"
         >
-          <ExternalLink 
-            size={18} 
-            className="transition-all text-zinc-500 group-hover:text-white group-hover:scale-110" 
+          <DiscordLogo 
+            width="18"
+            height="18"
+            className="transition-all text-zinc-500 group-hover:text-white" 
           />
         </a>
       </div>
