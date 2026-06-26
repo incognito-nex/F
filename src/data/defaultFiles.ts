@@ -1,14 +1,43 @@
 import { FileNode } from '../types';
 
+const now = new Date().toISOString();
+
 export const defaultFiles: FileNode[] = [
   {
-    id: 'script-lua',
-    name: 'script.lua',
-    type: 'file',
+    id: 'folder-autoexec',
+    name: 'AutoExec',
+    type: 'folder',
     parentId: null,
-    language: 'luau',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
+    size: 0
+  },
+  {
+    id: 'folder-workspace',
+    name: 'Workspace',
+    type: 'folder',
+    parentId: null,
+    createdAt: now,
+    updatedAt: now,
+    size: 0
+  },
+  {
+    id: 'folder-scripts',
+    name: 'Scripts',
+    type: 'folder',
+    parentId: null,
+    createdAt: now,
+    updatedAt: now,
+    size: 0
+  },
+  {
+    id: 'welcome-lua',
+    name: 'welcome.lua',
+    type: 'file',
+    parentId: 'folder-workspace',
+    language: 'lua',
+    createdAt: now,
+    updatedAt: now,
     size: 58,
     content: `-- [
             Start your journey, 

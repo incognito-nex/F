@@ -110,7 +110,7 @@ export interface UserSettings {
     animationsEnabled?: boolean;
   };
   syntax: {
-    engineId: string; // Active syntax ID e.g. 'studio-classic', 'roblox-luau', etc.
+    engineId: string; // Active syntax ID e.g. 'studio-classic', 'roblox-lua', etc.
   };
   account: {
     username: string;

@@ -178,10 +178,6 @@ function CodeEditorInner({
   // Tab dragging state
   const [draggedFileId, setDraggedFileId] = useState<string | null>(null);
 
-  // Right Toolbox Drawer states
-  const [isToolboxOpen, setIsToolboxOpen] = useState(true);
-  const [toolboxTab, setToolboxTab] = useState<'snippets' | 'analyzer' | 'config'>('snippets');
-
   // Local override states for hot-toggles in the editor
   const [localFontSize, setLocalFontSize] = useState<number | null>(null);
   const [localMinimap, setLocalMinimap] = useState<boolean | null>(null);
@@ -377,13 +373,13 @@ function CodeEditorInner({
   useEffect(() => {
     if (!monaco) return;
 
-    // Register Luau as custom ID if not already registered
-    if (!monaco.languages.getLanguages().some(lang => lang.id === 'luau')) {
-      monaco.languages.register({ id: 'luau' });
+    // Register Lua as custom ID if not already registered
+    if (!monaco.languages.getLanguages().some(lang => lang.id === 'lua')) {
+      monaco.languages.register({ id: 'lua' });
     }
 
-    // Advanced Language Configuration for Luau (brackets, auto-indent, block openings, and auto-closing)
-    monaco.languages.setLanguageConfiguration('luau', {
+    // Advanced Language Configuration for Lua (brackets, auto-indent, block openings, and auto-closing)
+    monaco.languages.setLanguageConfiguration('lua', {
       comments: {
         lineComment: '--',
         blockComment: ['--[[', ']]'],
@@ -436,7 +432,7 @@ function CodeEditorInner({
     const keywordsList = activeSyntax.keywords.length > 0 ? activeSyntax.keywords : ['local', 'function', 'return', 'end'];
     const functionsList = activeSyntax.functions.length > 0 ? activeSyntax.functions : ['print', 'warn'];
 
-    monaco.languages.setMonarchTokensProvider('luau', {
+    monaco.languages.setMonarchTokensProvider('lua', {
       defaultToken: 'invalid',
       keywords: keywordsList,
       functions: functionsList,
@@ -562,7 +558,7 @@ function CodeEditorInner({
     monaco.editor.setTheme('incognitoTheme');
 
     // Register dynamic autocomplete completion provider
-    const completionProvider = monaco.languages.registerCompletionItemProvider('luau', {
+    const completionProvider = monaco.languages.registerCompletionItemProvider('lua', {
       provideCompletionItems: (model, position) => {
         const word = model.getWordUntilPosition(position);
         const range = {
@@ -601,7 +597,7 @@ function CodeEditorInner({
           { name: 'math.clamp', desc: 'Clamps a number between a min and max', kind: 'Method', snippet: 'math.clamp(${1:val}, ${2:min}, ${3:max})' },
           { name: 'math.random', desc: 'Returns a random number or integer', kind: 'Method', snippet: 'math.random(${1:1}, ${2:100})' },
           { name: 'TweenService', desc: 'Service to animate property offsets smoothly', kind: 'Module' },
-          { name: 'Players', desc: 'Roblox / Luau Players server/client container', kind: 'Module' },
+          { name: 'Players', desc: 'Roblox / Lua Players server/client container', kind: 'Module' },
           { name: 'ReplicatedStorage', desc: 'Synchronized workspace assets container', kind: 'Module' },
           { name: 'Script', desc: 'Reference to this active script instance', kind: 'Variable' },
           { name: 'print', desc: 'Log standard message debug lines to developer output', kind: 'Function', snippet: 'print($1)' },
@@ -610,7 +606,7 @@ function CodeEditorInner({
           { name: 'pairs', desc: 'Generator function for standard iterative loops', kind: 'Function', snippet: 'pairs($1)' },
           { name: 'ipairs', desc: 'Generator function for indexed sequential arrays', kind: 'Function', snippet: 'ipairs($1)' },
           { name: 'type', desc: 'Identifies string type names of parameters', kind: 'Function', snippet: 'type($1)' },
-          { name: 'typeof', desc: 'Identifies complex structure type names in Luau environment', kind: 'Function', snippet: 'typeof($1)' },
+          { name: 'typeof', desc: 'Identifies complex structure type names in Lua environment', kind: 'Function', snippet: 'typeof($1)' },
         ];
 
         const rbxSuggestions = luauGlobals.map(g => {
@@ -1101,323 +1097,100 @@ function CodeEditorInner({
         {activeFileId ? (
           <div className="flex-1 min-h-0 text-left flex flex-col relative h-full">
             
-            {/* Split view: Editor left, Toolbox right */}
-            <div className="flex-1 flex min-h-0 relative w-full overflow-hidden">
-              <div className="flex-1 min-h-0 relative h-full">
-                {editorMode === 'monaco' ? (
-                  <Editor
-                    height="100%"
-                    language="luau"
-                    path={activeFileId}
-                    defaultValue={activeFile?.content || ''}
-                    onMount={(editor) => {
-                      editorRef.current = editor;
-                    }}
-                    onChange={handleEditorChange}
-                    theme="incognitoTheme"
-                    options={{
-                      fontSize: fontSize,
-                      fontFamily: settings.editor.fontFamily,
-                      tabSize: settings.editor.tabSize,
-                      wordWrap: wordWrap,
-                      minimap: { enabled: minimapEnabled },
-                      automaticLayout: true,
-                      padding: { top: 8, bottom: 8 },
-                      cursorBlinking: settings.editor.cursorBlinking || 'smooth',
-                      cursorSmoothCaretAnimation: settings.editor.smoothCaret !== false ? 'on' : 'off',
-                      cursorStyle: settings.editor.cursorStyle || 'line',
-                      cursorWidth: 2,
-                      folding: true,
-                      autoIndent: 'full',
-                      bracketPairColorization: { enabled: true },
-                      colorDecorators: true,
-                      formatOnPaste: true,
-                      contextmenu: true,
-                      autoClosingBrackets: settings.editor.bracketAutocomplete ? 'always' : 'never',
-                      autoClosingQuotes: settings.editor.bracketAutocomplete ? 'always' : 'never',
-                      autoSurround: settings.editor.bracketAutocomplete ? 'languageDefined' : 'never',
-                      quickSuggestions: { other: true, comments: false, strings: false },
-                      suggestOnTriggerCharacters: true,
-                      acceptSuggestionOnEnter: 'on',
-                      tabCompletion: 'on',
-                      parameterHints: { enabled: true },
-                      dragAndDrop: true,
-                      wordBasedSuggestions: 'allDocuments'
-                    }}
-                  />
-                ) : (
-                  <div className="flex-1 flex min-h-0 w-full relative overflow-hidden h-full" style={{ backgroundColor: theme.editorBg }}>
-                    {/* Line Gutter */}
+            {editorMode === 'monaco' ? (
+              <Editor
+                height="100%"
+                language="lua"
+                path={activeFileId}
+                defaultValue={activeFile?.content || ''}
+                onMount={(editor) => {
+                  editorRef.current = editor;
+                }}
+                onChange={handleEditorChange}
+                theme="incognitoTheme"
+                options={{
+                  fontSize: fontSize,
+                  fontFamily: settings.editor.fontFamily,
+                  tabSize: settings.editor.tabSize,
+                  wordWrap: wordWrap,
+                  minimap: { enabled: minimapEnabled },
+                  automaticLayout: true,
+                  padding: { top: 8, bottom: 8 },
+                  cursorBlinking: settings.editor.cursorBlinking || 'smooth',
+                  cursorSmoothCaretAnimation: settings.editor.smoothCaret !== false ? 'on' : 'off',
+                  cursorStyle: settings.editor.cursorStyle || 'line',
+                  cursorWidth: 2,
+                  folding: true,
+                  autoIndent: 'full',
+                  bracketPairColorization: { enabled: true },
+                  colorDecorators: true,
+                  formatOnPaste: true,
+                  contextmenu: true,
+                  autoClosingBrackets: settings.editor.bracketAutocomplete ? 'always' : 'never',
+                  autoClosingQuotes: settings.editor.bracketAutocomplete ? 'always' : 'never',
+                  autoSurround: settings.editor.bracketAutocomplete ? 'languageDefined' : 'never',
+                  quickSuggestions: { other: true, comments: false, strings: false },
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnEnter: 'on',
+                  tabCompletion: 'on',
+                  parameterHints: { enabled: true },
+                  dragAndDrop: true,
+                  wordBasedSuggestions: 'allDocuments'
+                }}
+              />
+            ) : (
+              <div className="flex-1 flex min-h-0 w-full relative overflow-hidden h-full" style={{ backgroundColor: theme.editorBg }}>
+                {/* Line Gutter */}
+                <div 
+                  ref={gutterRef}
+                  className="w-12 select-none pr-2.5 text-right font-mono overflow-hidden border-r shrink-0 opacity-40 py-2 select-none scrollbar-none"
+                  style={{ 
+                    borderColor: theme.borderColor, 
+                    color: theme.isLight ? '#71717a' : '#a1a1aa',
+                    backgroundColor: theme.headerBg 
+                  }}
+                >
+                  {Array.from({ length: editorVal.split('\n').length || 1 }).map((_, i) => (
                     <div 
-                      ref={gutterRef}
-                      className="w-12 select-none pr-2.5 text-right font-mono overflow-hidden border-r shrink-0 opacity-40 py-2 select-none scrollbar-none"
+                      key={i} 
                       style={{ 
-                        borderColor: theme.borderColor, 
-                        color: theme.isLight ? '#71717a' : '#a1a1aa',
-                        backgroundColor: theme.headerBg 
-                      }}
-                    >
-                      {Array.from({ length: editorVal.split('\n').length || 1 }).map((_, i) => (
-                        <div 
-                          key={i} 
-                          style={{ 
-                            fontSize: `${fontSize}px`,
-                            fontFamily: settings.editor.fontFamily,
-                            height: '22px',
-                            lineHeight: '22px'
-                          }}
-                        >
-                          {i + 1}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Textarea Area */}
-                    <textarea
-                      ref={textareaRef}
-                      value={editorVal}
-                      onChange={(e) => handleEditorChange(e.target.value)}
-                      onScroll={handleTextareaScroll}
-                      onKeyDown={handleTextareaKeyDown}
-                      spellCheck={false}
-                      placeholder="-- Start writing your Luau code here..."
-                      className="flex-1 h-full py-2 px-3 resize-none focus:outline-none focus:ring-0 border-0 font-mono overflow-y-auto"
-                      style={{
                         fontSize: `${fontSize}px`,
                         fontFamily: settings.editor.fontFamily,
-                        lineHeight: '22px',
-                        backgroundColor: theme.editorBg,
-                        color: theme.isLight ? '#18181b' : '#f1f5f9',
+                        height: '22px',
+                        lineHeight: '22px'
                       }}
-                    />
-
-                    {/* Lite Mode Indicator Badge */}
-                    <div className="absolute top-3 right-3 bg-zinc-900/90 border border-zinc-800 backdrop-blur-sm rounded-full py-1 px-3 flex items-center space-x-1.5 text-[9px] font-mono font-bold text-zinc-400 select-none z-10 shadow-lg">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      <span>Lite Mode Fallback</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Collapsible Right-Side Premium Toolbox Drawer */}
-              {isToolboxOpen && (
-                <div 
-                  style={{ 
-                    backgroundColor: theme.id === 'transparent-beta' ? 'rgba(10, 11, 15, 0.4)' : theme.sidebarBg,
-                    borderColor: theme.borderColor,
-                  }}
-                  className="w-80 h-full border-l flex flex-col shrink-0 select-none backdrop-blur-md relative overflow-hidden"
-                >
-                  {/* Glass highlight effect */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
-                  {/* Header */}
-                  <div className="h-11 border-b border-zinc-900/40 px-3.5 flex items-center justify-between bg-zinc-950/20 relative z-10">
-                    <div className="flex items-center space-x-1.5 text-zinc-300">
-                      <Sparkles size={13} style={{ color: theme.accent }} />
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Workspace Assistant</span>
-                    </div>
-                    <button
-                      onClick={() => setIsToolboxOpen(false)}
-                      className="p-1 hover:bg-zinc-800/40 dark:hover:bg-white/5 rounded text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
                     >
-                      <X size={12} />
-                    </button>
-                  </div>
-
-                  {/* Windows 11 Fluent Tab Bar */}
-                  <div className="h-9 border-b border-zinc-900/40 px-2 flex items-center space-x-1 bg-zinc-950/10 relative z-10">
-                    {(['snippets', 'analyzer', 'config'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setToolboxTab(tab)}
-                        className={`px-3 py-1 text-[9px] font-mono font-bold uppercase rounded-md transition-all duration-75 cursor-pointer ${
-                          toolboxTab === tab
-                            ? 'bg-zinc-900/80 border border-zinc-800 text-white shadow-sm'
-                            : 'text-zinc-500 hover:text-zinc-300'
-                        }`}
-                      >
-                        {tab === 'snippets' ? 'Snippets' : tab === 'analyzer' ? 'Analyzer' : 'Controls'}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="flex-1 overflow-y-auto p-3.5 space-y-4 text-left relative z-10 scrollbar-none">
-                    {toolboxTab === 'snippets' && (
-                      <div className="space-y-3">
-                        <div className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest mb-1">Double click or click Plus to inject template:</div>
-                        <div className="space-y-2">
-                          {WORKSPACE_SNIPPETS.map((snip) => (
-                            <div 
-                              key={snip.name}
-                              onClick={() => insertSnippet(snip.code)}
-                              className="group p-2.5 rounded-xl border border-zinc-900/80 bg-zinc-950/40 hover:bg-zinc-900/30 hover:border-zinc-700/60 cursor-pointer transition-all duration-75"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold font-mono text-zinc-200 group-hover:text-white transition-colors">{snip.name}</span>
-                                <Plus size={11} style={{ color: theme.accent }} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </div>
-                              <p className="text-[9px] font-mono text-zinc-500 mt-1 leading-normal">{snip.description}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {toolboxTab === 'analyzer' && (
-                      <div className="space-y-4">
-                        {/* Quality indicators */}
-                        <div className="p-3 rounded-xl border border-zinc-900/80 bg-zinc-950/40 space-y-2">
-                          <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Real-time script telemetry</span>
-                          <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
-                            <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-900/50">
-                              <div className="text-[9px] text-zinc-500 uppercase">Lines</div>
-                              <div className="text-sm font-bold text-zinc-200 mt-0.5">{editorVal.split('\n').filter(l=>l.trim()).length}</div>
-                            </div>
-                            <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-900/50">
-                              <div className="text-[9px] text-zinc-500 uppercase">Chars</div>
-                              <div className="text-sm font-bold text-zinc-200 mt-0.5">{editorVal.length}</div>
-                            </div>
-                            <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-900/50">
-                              <div className="text-[9px] text-zinc-500 uppercase">Functions</div>
-                              <div className="text-sm font-bold text-zinc-200 mt-0.5">{(editorVal.match(/\bfunction\b/g) || []).length}</div>
-                            </div>
-                            <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-900/50">
-                              <div className="text-[9px] text-zinc-500 uppercase">Variables</div>
-                              <div className="text-sm font-bold text-zinc-200 mt-0.5">{(editorVal.match(/\blocal\s+\w+/g) || []).length}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Compiler refactoring */}
-                        <div className="p-3 rounded-xl border border-zinc-900/80 bg-zinc-950/40 space-y-2">
-                          <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Refactoring Commands</span>
-                          <div className="flex flex-col space-y-2 pt-1">
-                            <button
-                              onClick={beautifyScript}
-                              style={{ borderColor: theme.borderColor }}
-                              className="w-full py-2 bg-zinc-900/60 hover:bg-zinc-850 border rounded-lg text-[10px] font-mono font-bold text-zinc-300 hover:text-white transition cursor-pointer flex items-center justify-center space-x-1.5"
-                            >
-                              <RotateCcw size={11} />
-                              <span>Beautify & Format Code</span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (editorVal) {
-                                  const minified = minifyCode(editorVal);
-                                  setEditorValueProgrammatically(minified);
-                                  onSaveFile(activeFileId, minified);
-                                }
-                              }}
-                              style={{ borderColor: theme.borderColor }}
-                              className="w-full py-2 bg-zinc-900/60 hover:bg-zinc-850 border rounded-lg text-[10px] font-mono font-bold text-zinc-300 hover:text-white transition cursor-pointer flex items-center justify-center space-x-1.5"
-                            >
-                              <Lock size={11} />
-                              <span>Minify Script Space</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Functions checklist */}
-                        <div className="p-3 rounded-xl border border-zinc-900/80 bg-zinc-950/40 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Symbol Navigator</span>
-                            <span className="text-[8px] font-mono font-bold bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-400">LUAU</span>
-                          </div>
-                          <div className="max-h-32 overflow-y-auto space-y-1 font-mono text-[10px] text-zinc-400 scrollbar-none pt-1">
-                            {getFunctionNames(editorVal).length > 0 ? (
-                              getFunctionNames(editorVal).map((fn, idx) => (
-                                <div key={idx} className="flex items-center space-x-1.5 py-0.5 border-b border-zinc-900/30 truncate">
-                                  <span className="text-[8px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded px-1 shrink-0">FN</span>
-                                  <span className="truncate text-zinc-300">{fn}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-[9px] text-zinc-600 text-center py-2">No functions found.</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {toolboxTab === 'config' && (
-                      <div className="space-y-4 font-mono">
-                        <div className="p-3 rounded-xl border border-zinc-900/80 bg-zinc-950/40 space-y-3">
-                          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Hot-Toggles</span>
-                          
-                          {/* Font size control */}
-                          <div className="flex items-center justify-between text-[11px] pt-1">
-                            <span className="text-zinc-400">Font Size ({fontSize}px)</span>
-                            <div className="flex items-center space-x-1">
-                              <button
-                                onClick={() => setLocalFontSize(Math.max(10, fontSize - 1))}
-                                className="w-6 h-6 bg-zinc-900 hover:bg-zinc-800 rounded border border-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer text-xs font-bold"
-                              >
-                                -
-                              </button>
-                              <button
-                                onClick={() => setLocalFontSize(Math.min(24, fontSize + 1))}
-                                className="w-6 h-6 bg-zinc-900 hover:bg-zinc-800 rounded border border-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer text-xs font-bold"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Minimap control */}
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-zinc-400">Editor Minimap</span>
-                            <button
-                              onClick={() => setLocalMinimap(!minimapEnabled)}
-                              className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded border transition-all duration-75 cursor-pointer ${
-                                minimapEnabled
-                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                                  : 'bg-zinc-900 border-zinc-800 text-zinc-500'
-                              }`}
-                            >
-                              {minimapEnabled ? 'Visible' : 'Hidden'}
-                            </button>
-                          </div>
-
-                          {/* Word wrap control */}
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-zinc-400">Word Wrap</span>
-                            <button
-                              onClick={() => setLocalWordWrap(wordWrap === 'on' ? 'off' : 'on')}
-                              className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded border transition-all duration-75 cursor-pointer ${
-                                wordWrap === 'on'
-                                  ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
-                                  : 'bg-zinc-900 border-zinc-800 text-zinc-500'
-                              }`}
-                            >
-                              {wordWrap === 'on' ? 'Wrapped' : 'Standard'}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Roblox services autoloader */}
-                        <div className="p-3 rounded-xl border border-zinc-900/80 bg-zinc-950/40 space-y-2">
-                          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Service Instantiation</span>
-                          <div className="grid grid-cols-2 gap-1.5 pt-1">
-                            {['Players', 'ReplicatedStorage', 'TweenService', 'RunService', 'HttpService', 'UserInputService'].map(srv => (
-                              <button
-                                key={srv}
-                                onClick={() => insertSnippet(`local ${srv} = game:GetService("${srv}")\n`)}
-                                className="py-1 bg-zinc-900/60 hover:bg-zinc-850 hover:text-white border border-zinc-900 rounded text-[9px] text-zinc-400 text-left px-2 truncate cursor-pointer transition-colors"
-                              >
-                                {srv}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      {i + 1}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                {/* Textarea Area */}
+                <textarea
+                  ref={textareaRef}
+                  value={editorVal}
+                  onChange={(e) => handleEditorChange(e.target.value)}
+                  onScroll={handleTextareaScroll}
+                  onKeyDown={handleTextareaKeyDown}
+                  spellCheck={false}
+                  placeholder="-- Start writing your Lua code here..."
+                  className="flex-1 h-full py-2 px-3 resize-none focus:outline-none focus:ring-0 border-0 font-mono overflow-y-auto"
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    fontFamily: settings.editor.fontFamily,
+                    lineHeight: '22px',
+                    backgroundColor: theme.editorBg,
+                    color: theme.isLight ? '#18181b' : '#f1f5f9',
+                  }}
+                />
+
+                {/* Lite Mode Indicator Badge */}
+                <div className="absolute top-3 right-3 bg-zinc-900/90 border border-zinc-800 backdrop-blur-sm rounded-full py-1 px-3 flex items-center space-x-1.5 text-[9px] font-mono font-bold text-zinc-400 select-none z-10 shadow-lg">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Lite Mode Fallback</span>
+                </div>
+              </div>
+            )}
 
             {/* 100x Improved Editor Actions Bottom Bar */}
             <div 
@@ -1457,7 +1230,7 @@ function CodeEditorInner({
                     color: theme.isLight ? '#52525b' : '#a1a1aa'
                   }}
                   className="h-9 w-9 rounded-xl border flex items-center justify-center hover:bg-zinc-800/30 hover:text-white hover:border-zinc-500 active:scale-95 transition-all cursor-pointer"
-                  title="Obfuscate Luau Script Code"
+                  title="Obfuscate Lua Script Code"
                 >
                   <Lock size={15} />
                 </button>
@@ -1477,24 +1250,9 @@ function CodeEditorInner({
                     color: theme.isLight ? '#52525b' : '#a1a1aa'
                   }}
                   className="h-9 w-9 rounded-xl border flex items-center justify-center hover:bg-zinc-800/30 hover:text-white hover:border-zinc-500 active:scale-95 transition-all cursor-pointer"
-                  title="Deobfuscate / Beautify Luau Script Code"
+                  title="Deobfuscate / Beautify Lua Script Code"
                 >
                   <Unlock size={15} />
-                </button>
-
-                {/* Toolbox Toggle Button */}
-                <button
-                  onClick={() => setIsToolboxOpen(!isToolboxOpen)}
-                  style={{
-                    backgroundColor: isToolboxOpen ? `${theme.accent}15` : (theme.isLight ? '#f4f4f5' : '#0a0a0c'),
-                    borderColor: isToolboxOpen ? `${theme.accent}40` : theme.borderColor,
-                    color: isToolboxOpen ? theme.accent : (theme.isLight ? '#52525b' : '#a1a1aa')
-                  }}
-                  className="h-9 px-3.5 rounded-xl border flex items-center space-x-1.5 text-xs font-mono font-bold active:scale-95 hover:brightness-110 transition-all cursor-pointer"
-                  title="Toggle Workspace Toolbox Panel"
-                >
-                  <Sparkles size={14} className={isToolboxOpen ? 'animate-pulse' : ''} style={{ color: isToolboxOpen ? theme.accent : undefined }} />
-                  <span className="text-[10px] uppercase tracking-wider">Toolbox</span>
                 </button>
               </div>
 

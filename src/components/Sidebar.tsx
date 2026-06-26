@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion, LayoutGroup } from 'motion/react';
+import React, { useState } from 'react';
+import { motion, LayoutGroup, AnimatePresence } from 'motion/react';
 import { LayoutGrid, Code2, Compass, Sliders, Cpu, Fingerprint, Shield, X } from 'lucide-react';
 import { AppTheme, UserSettings } from '../types';
 
@@ -21,6 +21,8 @@ export default function Sidebar({
   setSettings, 
   statusColorText = 'green' 
 }: SidebarProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
   const menuItems = [
     { id: 'home', label: 'Home', icon: <LayoutGrid size={18} /> },
     { id: 'editor', label: 'Editor', icon: <Code2 size={18} /> },
@@ -32,58 +34,87 @@ export default function Sidebar({
 
   return (
     <div className="h-full flex items-center relative select-none px-1">
-      <div className="flex items-center space-x-1">
-        {menuItems.map((item) => {
-          const isActive = activeSection === item.id;
-          return (
-            <motion.button
-              id={`sidebar-btn-${item.id}`}
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              whileHover={{ scale: 1.05, y: 1 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`w-11 h-11 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border relative cursor-pointer outline-none transition-colors duration-200 ${
-                isActive
-                  ? 'border-transparent bg-zinc-800/10 dark:bg-white/5'
-                  : 'border-transparent hover:bg-zinc-800/5 dark:hover:bg-white/5'
-              }`}
-              style={{
-                color: isActive ? theme.textMain : theme.textMuted,
-                boxShadow: 'none',
-              }}
-              title={item.label}
-            >
-              {/* Dynamic Non-Stretching Smooth Linear Active Indicator on Top */}
-              {isActive && (
-                <motion.div
-                  layoutId="top-bar-active-indicator"
-                  className="absolute top-0 h-[3px] rounded-b-full w-[22px] z-50 left-1/2 -translate-x-1/2"
-                  style={{
-                    backgroundColor: theme.accent,
-                    boxShadow: `0 1px 12px ${theme.accent}, 0 0 3px ${theme.accent}aa`,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 380,
-                    damping: 30,
-                  }}
-                />
-              )}
+      <LayoutGroup id="sidebar-layout-group">
+        <div className="flex items-center space-x-1.5">
+          {menuItems.map((item) => {
+            const isActive = activeSection === item.id;
+            const isHovered = hoveredId === item.id;
+            const isExpanded = isHovered;
 
-              <div
-                style={{
-                  color: isActive ? theme.accent : theme.textMuted,
-                  filter: isActive ? `drop-shadow(0 0 3px ${theme.accent}30)` : 'none',
+            return (
+              <motion.button
+                id={`sidebar-btn-${item.id}`}
+                key={item.id}
+                layout
+                onClick={() => setActiveSection(item.id)}
+                onMouseEnter={() => setHoveredId(item.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                whileTap={{ scale: 0.96 }}
+                transition={{
+                  type: "tween",
+                  duration: 0.45,
+                  ease: "easeInOut"
                 }}
-                className="transition-colors duration-200 shrink-0 flex items-center justify-center"
+                className="h-10 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border border-transparent bg-transparent relative cursor-pointer outline-none transition-colors duration-300 hover:bg-zinc-800/10 dark:hover:bg-white/10"
+                style={{
+                  color: isActive ? theme.textMain : theme.textMuted,
+                  boxShadow: 'none',
+                  paddingLeft: isExpanded ? '14px' : '11px',
+                  paddingRight: isExpanded ? '14px' : '11px',
+                  minWidth: isExpanded ? '110px' : '40px',
+                }}
+                title={item.label}
               >
-                {item.icon}
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
+                {/* Dynamic Non-Stretching Smooth Linear Active Indicator at Bottom */}
+                {isActive && (
+                  <motion.div
+                    layoutId="top-bar-active-indicator"
+                    className="absolute bottom-0 h-[2.5px] rounded-t-full w-[20px] z-50 left-1/2 -translate-x-1/2"
+                    style={{
+                      backgroundColor: theme.accent,
+                      boxShadow: `0 -1px 10px ${theme.accent}, 0 0 2px ${theme.accent}aa`,
+                    }}
+                    transition={{
+                      type: "tween",
+                      duration: 0.45,
+                      ease: "easeInOut"
+                    }}
+                  />
+                )}
+
+                <div
+                  style={{
+                    color: isActive ? theme.accent : theme.textMuted,
+                    filter: isActive ? `drop-shadow(0 0 3px ${theme.accent}30)` : 'none',
+                  }}
+                  className="transition-colors duration-200 shrink-0 flex items-center justify-center"
+                >
+                  {item.icon}
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                      animate={{ opacity: 1, width: 'auto', marginLeft: 8 }}
+                      exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                      transition={{
+                        type: "tween",
+                        duration: 0.45,
+                        ease: "easeInOut"
+                      }}
+                      className="overflow-hidden whitespace-nowrap text-[11px] uppercase tracking-wider font-bold"
+                      style={{ color: isActive ? theme.textMain : theme.textMuted }}
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            );
+          })}
+        </div>
+      </LayoutGroup>
     </div>
   );
 }

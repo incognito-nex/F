@@ -73,16 +73,16 @@ export default function EditorView({
     if (!monaco) return;
 
     try {
-      // Register custom luau language if not already there
+      // Register custom lua language if not already there
       const registeredLangs = monaco.languages.getLanguages();
-      const isLuauRegistered = registeredLangs.some(l => l.id === 'luau');
+      const isLuauRegistered = registeredLangs.some(l => l.id === 'lua');
 
       if (!isLuauRegistered) {
-        monaco.languages.register({ id: 'luau' });
+        monaco.languages.register({ id: 'lua' });
       }
 
       // Configure current highlighting colors parameters
-      monaco.languages.setMonarchTokensProvider('luau', {
+      monaco.languages.setMonarchTokensProvider('lua', {
         keywords: syntaxProfile.keywords,
         functions: syntaxProfile.functions,
         tokenizer: {
@@ -181,13 +181,13 @@ export default function EditorView({
 
   // Node operations
   const triggerCreateIn = (parentId: string | null, type: 'file' | 'folder') => {
-    const label = type === 'file' ? 'Script name (e.g. ServerAntiCheat.luau):' : 'Folder label:';
+    const label = type === 'file' ? 'Script name (e.g. ServerAntiCheat.lua):' : 'Folder label:';
     const input = prompt(label);
     if (!input) return;
 
     let finalName = input.trim();
-    if (type === 'file' && !finalName.endsWith('.luau')) {
-      finalName = `${finalName}.luau`;
+    if (type === 'file' && !finalName.endsWith('.lua')) {
+      finalName = `${finalName}.lua`;
     }
     const defaultText = type === 'file' 
       ? `--!strict\n-- Virtual script node: ${finalName}\nprint("Starting diagnostics pipeline...")\n`
@@ -409,7 +409,7 @@ export default function EditorView({
           >
             {tabs.length === 0 ? (
               <div className="text-[10px] font-mono text-zinc-600 px-4">
-                Sandbox buffer empty. Click a Luau file from the explorer list to script.
+                Sandbox buffer empty. Click a Lua file from the explorer list to script.
               </div>
             ) : (
               tabs.map((tab, idx) => {
@@ -488,7 +488,7 @@ export default function EditorView({
             {activeNode && activeNode.type === 'file' ? (
               <MonacoEditor
                 height="100%"
-                language="luau"
+                language="lua"
                 value={activeNode.content || ''}
                 onChange={(val) => {
                   if (val !== undefined) {
@@ -520,7 +520,7 @@ export default function EditorView({
                   Workspace Calibrator Idle
                 </h4>
                 <p className="max-w-xs text-[10px] text-zinc-600 font-mono mt-1">
-                  Click a Luau resource node or calibration file to start tuning suspension indices.
+                  Click a Lua resource node or calibration file to start tuning suspension indices.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center">
                   <button 

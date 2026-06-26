@@ -12,7 +12,7 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
   const logs = [
     'Initializing workspace environment...',
-    'Loading Luau compiler and language server...',
+    'Loading Lua compiler and language server...',
     'Establishing secure sandbox sandbox...',
     'Syncing local file nodes...',
     'Applying layout themes and custom presets...',

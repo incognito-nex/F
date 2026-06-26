@@ -457,7 +457,7 @@ export default function ScriptsView({
           {filteredScripts.length === 0 ? (
             <div className="text-center py-20 border border-dashed rounded-xl" style={{ borderColor: theme.borderColor, backgroundColor: theme.isLight ? '#fcfcfc' : 'rgba(0,0,0,0.1)' }}>
               <FileCode size={36} className="mx-auto mb-3" style={{ color: theme.textMuted }} />
-              <p className="text-xs font-mono text-zinc-500">No matching Luau scripts found in local workspace.</p>
+              <p className="text-xs font-mono text-zinc-500">No matching Lua scripts found in local workspace.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

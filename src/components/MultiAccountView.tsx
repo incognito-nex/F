@@ -77,7 +77,7 @@ export default function MultiAccountView({ theme, settings, triggerToast }: Mult
 
   const handleInjectAll = () => {
     setAccounts(prev => prev.map(a => ({ ...a, status: 'INJECTED' })));
-    triggerToast('Injected Luau Hooks to all connected client instances', 'inject');
+    triggerToast('Injected Lua Hooks to all connected client instances', 'inject');
   };
 
   const handleKillAllProcesses = () => {
@@ -490,7 +490,7 @@ export default function MultiAccountView({ theme, settings, triggerToast }: Mult
                     borderColor: theme.borderColor,
                     color: theme.isLight ? '#18181b' : '#38bdf8'
                   }}
-                  placeholder="-- Type your Luau script here to broadcast globally..."
+                  placeholder="-- Type your Lua script here to broadcast globally..."
                 />
 
                 <div className="flex items-center justify-between">

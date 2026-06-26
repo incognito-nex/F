@@ -78,7 +78,7 @@ export default function App() {
     addTerminalLine(`Searching for active host client processes...`, 'info');
     
     setTimeout(() => {
-      setInjectionLog('Hooking Luau thread scheduler...');
+      setInjectionLog('Hooking Lua thread scheduler...');
       addTerminalLine(`Found client process. Attaching dynamic injection hooks to standard address space...`, 'info');
     }, 700);
     
@@ -108,17 +108,47 @@ export default function App() {
   // States with Local Storage caching
   const [files, setFiles] = useState<FileNode[]>(() => {
     const saved = localStorage.getItem('incognito_files');
+    let parsed: FileNode[] = [];
     if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.some((f: any) => f.id === 'chassis-physics')) {
-        localStorage.removeItem('incognito_files');
-        localStorage.removeItem('incognito_tabs');
-        localStorage.removeItem('incognito_active_file');
-        return defaultFiles;
+      try {
+        parsed = JSON.parse(saved);
+        if (parsed.some((f: any) => f.id === 'chassis-physics')) {
+          localStorage.removeItem('incognito_files');
+          localStorage.removeItem('incognito_tabs');
+          localStorage.removeItem('incognito_active_file');
+          return defaultFiles;
+        }
+      } catch (e) {
+        parsed = [...defaultFiles];
       }
-      return parsed;
+    } else {
+      parsed = [...defaultFiles];
     }
-    return defaultFiles;
+
+    // Ensure the 3 core folders always exist in parsed list
+    const nowStr = new Date().toISOString();
+    const coreFolders = [
+      { id: 'folder-autoexec', name: 'AutoExec' },
+      { id: 'folder-workspace', name: 'Workspace' },
+      { id: 'folder-scripts', name: 'Scripts' }
+    ];
+
+    coreFolders.forEach(core => {
+      const exists = parsed.some(f => f.type === 'folder' && (f.id === core.id || f.name.toLowerCase() === core.name.toLowerCase()));
+      if (!exists) {
+        parsed.push({
+          id: core.id,
+          name: core.name,
+          type: 'folder',
+          parentId: null,
+          createdAt: nowStr,
+          updatedAt: nowStr,
+          size: 0
+        });
+      }
+    });
+
+    return parsed;
   });
 
   const [tabs, setTabs] = useState<TabItem[]>(() => {
@@ -827,7 +857,7 @@ print("ESP script loaded!")`;
         cardColorMode: 'colorful',
       },
       syntax: {
-        engineId: 'rbx-luau',
+        engineId: 'rbx-lua',
       },
       account: {
         username: onboardedName,
@@ -864,9 +894,9 @@ print("ESP script loaded!")`;
           appearance: { ...defaults.appearance, ...parsed.appearance },
           syntax: { 
             ...defaults.syntax, 
-            engineId: (parsed.syntax?.engineId === 'luau-default' || parsed.syntax?.engineId === 'rbx-luau')
-              ? 'rbx-luau' 
-              : 'exploit-luau'
+            engineId: (parsed.syntax?.engineId === 'lua-default' || parsed.syntax?.engineId === 'rbx-lua')
+              ? 'rbx-lua' 
+              : 'exploit-lua'
           },
           account: { 
             ...defaults.account, 
@@ -1157,7 +1187,7 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
     const target = files.find(f => f.id === fileId);
     if (!target) return;
 
-    addTerminalLine(`$ exec luau -arch=gt3 -file="${target.name}"`, 'input');
+    addTerminalLine(`$ exec lua -arch=gt3 -file="${target.name}"`, 'input');
     addTerminalLine(`Compiling dynamic execution graph: ${target.name}...`, 'info');
 
     // Parse simple patterns to mock real outputs
@@ -1436,9 +1466,9 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
             {/* Main horizontal content part of top bar: starts immediately after the logo block */}
             <div 
               style={{ borderColor: currentTheme.borderColor }}
-              className="flex-1 h-full border-b flex items-center justify-between px-4"
+              className="flex-1 h-full flex items-center justify-between px-4"
             >
-              {/* Left part: text incognito + simple dot indicator */}
+              {/* Left part: text incognito */}
               <div className="flex items-center space-x-4">
                 <span className={`font-sans font-black lowercase text-[24px] tracking-[-0.07em] leading-none select-none flex items-baseline ${
                   currentTheme.isLight ? 'text-zinc-950' : 'text-white'
@@ -1451,29 +1481,6 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                     3
                   </span>
                 </span>
-
-                {/* Pure status dot only - click to trigger simulation */}
-                <button 
-                  onClick={triggerSimulation}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 shrink-0 cursor-pointer outline-none ${
-                    injectionStatus === 'SUCCESS' 
-                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]' 
-                      : injectionStatus === 'FAILED'
-                        ? 'bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
-                        : injectionStatus === 'INJECTING'
-                          ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.7)]'
-                          : 'bg-white border border-zinc-500/20 shadow-sm'
-                  }`}
-                  title={
-                    injectionStatus === 'SUCCESS' 
-                      ? 'Injected' 
-                      : injectionStatus === 'FAILED'
-                        ? 'Injection Failed'
-                        : injectionStatus === 'INJECTING'
-                          ? 'Injecting...'
-                          : 'Not Injected - Click to inject'
-                  }
-                />
               </div>
 
               {/* Middle Navigation Menus */}

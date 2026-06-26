@@ -32,8 +32,8 @@ const allExploitKeywords = [
 
 export const defaultSyntaxes: CustomSyntaxProfile[] = [
   {
-    id: 'rbx-luau',
-    name: 'Normal Luau',
+    id: 'rbx-lua',
+    name: 'Normal Lua',
     keywords: [
       'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
       'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true',
@@ -59,8 +59,8 @@ export const defaultSyntaxes: CustomSyntaxProfile[] = [
     }
   },
   {
-    id: 'exploit-luau',
-    name: 'Custom Luau',
+    id: 'exploit-lua',
+    name: 'Custom Lua',
     keywords: [
       'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
       'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true',
