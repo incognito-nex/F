@@ -51,6 +51,16 @@ export default function ScriptsView({
     }
   });
 
+  // Full script objects of favorites synced to localStorage
+  const [favoriteScripts, setFavoriteScripts] = useState<Script[]>(() => {
+    try {
+      const saved = localStorage.getItem('script_hub_favorites_objects');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Recently Viewed state synced to localStorage
   const [history, setHistory] = useState<Script[]>(() => {
     try {
@@ -66,12 +76,17 @@ export default function ScriptsView({
     localStorage.setItem('script_hub_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
+  // Save favoriteScripts to localStorage
+  useEffect(() => {
+    localStorage.setItem('script_hub_favorites_objects', JSON.stringify(favoriteScripts));
+  }, [favoriteScripts]);
+
   // Save history to localStorage
   useEffect(() => {
     localStorage.setItem('script_hub_recent_viewed', JSON.stringify(history));
   }, [history]);
 
-  const handleToggleFavorite = (id: string) => {
+  const handleToggleFavorite = (id: string, script?: Script) => {
     setFavorites(prev => {
       const exists = prev.includes(id);
       let updated;
@@ -83,6 +98,16 @@ export default function ScriptsView({
         if (triggerToast) triggerToast('Added to favorites', 'success');
       }
       return updated;
+    });
+
+    setFavoriteScripts(prev => {
+      const exists = prev.some(item => item.id === id);
+      if (exists) {
+        return prev.filter(item => item.id !== id);
+      } else if (script) {
+        return [...prev, script];
+      }
+      return prev;
     });
   };
 
@@ -149,7 +174,7 @@ export default function ScriptsView({
               <span>Universal Script Hub</span>
             </h1>
             <p className="text-[10px] font-mono mt-1 text-zinc-500">
-              Execute, bookmark, and study optimized Roblox lua scripts synchronized live with both Rscripts.net & ScriptBlox.com databases.
+              Synchronized with Rscripts.net & ScriptBlox.com.
             </p>
           </div>
 
@@ -234,6 +259,7 @@ export default function ScriptsView({
             />
           ) : activeTab === 'favorites' ? (
             <Favorites
+              favoriteScripts={favoriteScripts}
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
               onExecute={handleExecute}
@@ -249,9 +275,6 @@ export default function ScriptsView({
                   <History size={13} style={{ color: theme.accent }} />
                   <span>Recently Opened Packages</span>
                 </h2>
-                <p className="text-[10px] font-mono text-zinc-500">
-                  A transient trace of scripts you inspected, executed, or customized during the active debugging session.
-                </p>
               </div>
 
               {history.length === 0 ? (

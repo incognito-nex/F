@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, LayoutGroup, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { LayoutGrid, Code2, Compass, Sliders, Cpu, Fingerprint, Shield, X, Key } from 'lucide-react';
 import { AppTheme, UserSettings } from '../types';
 
@@ -22,6 +22,8 @@ export default function Sidebar({
   statusColorText = 'green' 
 }: SidebarProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = useState({ x: 0, width: 24, opacity: 0 });
 
   const menuItems = [
     { id: 'home', label: 'Home', icon: <LayoutGrid size={18} /> },
@@ -39,96 +41,140 @@ export default function Sidebar({
     mass: 1
   };
 
+  // Measure the active button's size and center offset in real-time.
+  // Using ResizeObserver guarantees that whenever the button expands,
+  // the indicator tracks the center with buttery smooth precision.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updatePosition = () => {
+      const activeBtn = container.querySelector(`#sidebar-btn-${activeSection}`) as HTMLElement;
+      if (activeBtn) {
+        const indicatorWidth = 24;
+        const x = activeBtn.offsetLeft + (activeBtn.offsetWidth - indicatorWidth) / 2;
+        setIndicatorStyle({
+          x,
+          width: indicatorWidth,
+          opacity: 1,
+        });
+      } else {
+        setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
+      }
+    };
+
+    updatePosition();
+
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(updatePosition);
+    });
+
+    observer.observe(container);
+
+    // Also observe each button element in the sidebar to catch real-time width animations
+    const buttons = container.querySelectorAll('[id^="sidebar-btn-"]');
+    buttons.forEach(btn => observer.observe(btn));
+
+    // Fallback timer to ensure exact placement after animations finalize
+    const timeout = setTimeout(updatePosition, 150);
+    const timeout2 = setTimeout(updatePosition, 300);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeout);
+      clearTimeout(timeout2);
+    };
+  }, [activeSection, menuItems.length]);
+
   return (
     <div className="h-full flex items-center relative select-none px-1">
-      <LayoutGroup id="sidebar-layout-group">
-        <div className="flex items-center space-x-1.5">
-          {menuItems.map((item) => {
-            const isActive = activeSection === item.id;
-            const isHovered = hoveredId === item.id;
-            const isExpanded = isActive; // Only expand the active item to prevent layout shift glitches on hover
+      <div ref={containerRef} className="flex items-center space-x-1.5 relative h-10">
+        {menuItems.map((item) => {
+          const isActive = activeSection === item.id;
+          const isHovered = hoveredId === item.id;
+          const isExpanded = isActive; // Only expand the active item to prevent layout shift glitches on hover
 
-            return (
-              <motion.button
-                id={`sidebar-btn-${item.id}`}
-                key={item.id}
-                layout
-                onClick={() => setActiveSection(item.id)}
-                onMouseEnter={() => setHoveredId(item.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                animate={{
-                  paddingLeft: isExpanded ? '14px' : '11px',
-                  paddingRight: isExpanded ? '14px' : '11px',
-                  minWidth: isExpanded ? '112px' : '40px',
-                }}
-                transition={smoothTransition}
-                className="h-10 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border border-transparent bg-transparent relative cursor-pointer outline-none select-none"
-                style={{
-                  color: isActive ? theme.textMain : theme.textMuted,
-                  boxShadow: 'none',
-                }}
-                title={item.label}
-              >
-                {/* Smooth sliding hovered background pill for inactive items */}
-                {isHovered && !isActive && (
-                  <motion.div
-                    layoutId="top-bar-hover-pill"
-                    className="absolute inset-0 rounded-xl -z-10"
-                    style={{
-                      backgroundColor: theme.isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)',
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                    }}
-                  />
-                )}
-
-                {/* Dynamic Non-Stretching Smooth Linear Active Indicator at Bottom */}
-                {isActive && (
-                  <motion.div
-                    layoutId="top-bar-active-indicator"
-                    className="absolute bottom-0 h-[3px] rounded-t-full w-[24px] z-50 left-[calc(50%-12px)]"
-                    style={{
-                      backgroundColor: theme.accent,
-                      boxShadow: `0 -1.5px 12px ${theme.accent}, 0 0 3px ${theme.accent}aa`,
-                    }}
-                    transition={smoothTransition}
-                  />
-                )}
-
-                <div
+          return (
+            <motion.button
+              id={`sidebar-btn-${item.id}`}
+              key={item.id}
+              onClick={() => setActiveSection(item.id)}
+              onMouseEnter={() => setHoveredId(item.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              animate={{
+                paddingLeft: isExpanded ? '14px' : '11px',
+                paddingRight: isExpanded ? '14px' : '11px',
+                minWidth: isExpanded ? '112px' : '40px',
+              }}
+              transition={smoothTransition}
+              className="h-10 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border border-transparent bg-transparent relative cursor-pointer outline-none select-none"
+              style={{
+                color: isActive ? theme.textMain : theme.textMuted,
+                boxShadow: 'none',
+              }}
+              title={item.label}
+            >
+              {/* Smooth sliding hovered background pill for inactive items */}
+              {isHovered && !isActive && (
+                <motion.div
+                  layoutId="top-bar-hover-pill"
+                  className="absolute inset-0 rounded-xl -z-10"
                   style={{
-                    color: isActive ? theme.accent : theme.textMuted,
-                    filter: isActive ? `drop-shadow(0 0 3px ${theme.accent}30)` : 'none',
+                    backgroundColor: theme.isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)',
                   }}
-                  className="transition-colors duration-200 shrink-0 flex items-center justify-center"
-                >
-                  {item.icon}
-                </div>
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                  }}
+                />
+              )}
 
-                <AnimatePresence initial={false}>
-                  {isExpanded && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      animate={{ opacity: 1, width: 'auto', marginLeft: 8 }}
-                      exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      transition={smoothTransition}
-                      className="overflow-hidden whitespace-nowrap text-[11px] uppercase tracking-wider font-bold"
-                      style={{ color: isActive ? theme.textMain : theme.textMuted }}
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-        </div>
-      </LayoutGroup>
+              <div
+                style={{
+                  color: isActive ? theme.accent : theme.textMuted,
+                  filter: isActive ? `drop-shadow(0 0 3px ${theme.accent}30)` : 'none',
+                }}
+                className="transition-colors duration-200 shrink-0 flex items-center justify-center"
+              >
+                {item.icon}
+              </div>
+
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                    animate={{ opacity: 1, width: 'auto', marginLeft: 8 }}
+                    exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                    transition={smoothTransition}
+                    className="overflow-hidden whitespace-nowrap text-[11px] uppercase tracking-wider font-bold"
+                    style={{ color: isActive ? theme.textMain : theme.textMuted }}
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          );
+        })}
+
+        {/* Single Shared Active Indicator that glides smoothly across tabs */}
+        <motion.div
+          className="absolute bottom-0 h-[3px] rounded-t-full z-50 pointer-events-none"
+          animate={{
+            x: indicatorStyle.x,
+            width: indicatorStyle.width,
+            opacity: indicatorStyle.opacity,
+          }}
+          style={{
+            backgroundColor: theme.accent,
+            boxShadow: `0 -1.5px 12px ${theme.accent}, 0 0 3px ${theme.accent}aa`,
+          }}
+          transition={smoothTransition}
+        />
+      </div>
     </div>
   );
 }

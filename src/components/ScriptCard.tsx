@@ -7,7 +7,7 @@ import { Script } from '../types/script';
 interface ScriptCardProps {
   script: Script;
   isFavorited: boolean;
-  onToggleFavorite: (id: string) => void;
+  onToggleFavorite: (id: string, script?: Script) => void;
   onExecute: (script: Script) => void;
   onCopy: (script: Script) => void;
   onViewDetails: (script: Script) => void;
@@ -120,7 +120,7 @@ export default function ScriptCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleFavorite(script.id);
+                onToggleFavorite(script.id, script);
               }}
               style={{ backgroundColor: isFavorited ? 'rgba(234,179,8,0.15)' : 'rgba(0,0,0,0.65)' }}
               className={`p-1.5 rounded-lg border transition duration-150 cursor-pointer ${

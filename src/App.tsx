@@ -1542,14 +1542,14 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
               {/* Left part: text inco3 */}
               <div className="flex items-center space-x-4">
                 <span 
-                  style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
-                  className={`lowercase text-[18px] tracking-[-0.05em] leading-none select-none flex items-baseline ${
+                  style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 500, fontSize: '31px' }}
+                  className={`lowercase tracking-[-0.05em] leading-none select-none flex items-baseline ${
                     currentTheme.isLight ? 'text-zinc-950' : 'text-white'
                   }`}
                 >
                   inco
                   <span 
-                    style={{ color: currentTheme.accent, fontFamily: "'Poppins', sans-serif", fontWeight: 300 }} 
+                    style={{ color: currentTheme.accent, fontFamily: "'Poppins', sans-serif", fontWeight: 500 }} 
                     className="ml-[0.5px]"
                   >
                     3

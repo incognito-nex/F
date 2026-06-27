@@ -30,7 +30,7 @@ export default function AboutView({ theme, settings }: AboutViewProps) {
 
   const handleValidate = () => {
     if (!licenseKey.trim()) {
-      setMessage({ type: 'info', text: 'Cleared key. Reverted to Free Tier.' });
+      setMessage({ type: 'info', text: 'Cleared key. Reverted to FREE/PREMIUM.' });
       localStorage.removeItem('incognito_license_key');
       setIsPremium(false);
       return;
@@ -82,7 +82,6 @@ export default function AboutView({ theme, settings }: AboutViewProps) {
               <h1 className="text-base font-extrabold tracking-tight uppercase" style={{ color: theme.textMain }}>
                 Key Management
               </h1>
-              <p className="text-[10px] font-mono text-zinc-500">License verification & environment tier</p>
             </div>
           </div>
 
@@ -94,7 +93,7 @@ export default function AboutView({ theme, settings }: AboutViewProps) {
               </span>
             ) : (
               <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full uppercase bg-zinc-900 text-zinc-400 border border-zinc-800">
-                Free Tier
+                FREE/PREMIUM
               </span>
             )}
           </div>

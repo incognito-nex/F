@@ -16,17 +16,25 @@ export async function searchAllScripts(
     key?: boolean;
     patched?: boolean;
     sortBy?: 'relevance' | 'views' | 'likes' | 'newest';
+    signal?: AbortSignal;
   } = {}
 ): Promise<Script[]> {
   const page = options.page || 1;
 
-  // Fire both requests in parallel for maximum speed!
+  // Fire both requests in parallel for maximum speed, passing the AbortSignal
   const [rscriptsRes, scriptbloxRes] = await Promise.all([
     fetchRscripts({
       page,
       search: query,
-      orderBy: options.sortBy === 'views' ? 'views' : options.sortBy === 'likes' ? 'likes' : 'date'
-    }).catch(() => [] as Script[]), // recover silently
+      orderBy: options.sortBy === 'views' ? 'views' : options.sortBy === 'likes' ? 'likes' : 'date',
+      signal: options.signal
+    }).catch((err) => {
+      // If aborted, propagate the error upwards so useSearch can ignore or handle
+      if (err.name === 'AbortError' || options.signal?.aborted) {
+        throw err;
+      }
+      return [] as Script[];
+    }),
 
     fetchScriptBlox({
       page,
@@ -35,8 +43,14 @@ export async function searchAllScripts(
       universal: options.universal,
       key: options.key,
       patched: options.patched,
-      sortBy: options.sortBy === 'views' ? 'views' : options.sortBy === 'likes' ? 'likes' : 'createdAt'
-    }).catch(() => [] as Script[]) // recover silently
+      sortBy: options.sortBy === 'views' ? 'views' : options.sortBy === 'likes' ? 'likes' : 'createdAt',
+      signal: options.signal
+    }).catch((err) => {
+      if (err.name === 'AbortError' || options.signal?.aborted) {
+        throw err;
+      }
+      return [] as Script[];
+    })
   ]);
 
   // Combine and deduplicate

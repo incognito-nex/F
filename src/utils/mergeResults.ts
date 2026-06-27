@@ -9,9 +9,9 @@ export function mergeResults(rscripts: Script[], scriptblox: Script[]): Script[]
 
   // Helper to add unique scripts
   const addScripts = (list: Script[]) => {
+    if (!Array.isArray(list)) return;
     for (const item of list) {
-      // Normalize comparison string to catch duplicate scripts
-      const normalizedTitle = item.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!item || !item.id) continue;
       const uniqueKey = item.id;
       
       if (!seenIds.has(uniqueKey)) {
@@ -23,6 +23,9 @@ export function mergeResults(rscripts: Script[], scriptblox: Script[]): Script[]
 
   addScripts(rscripts);
   addScripts(scriptblox);
+
+  // 3. Console.log the final array after merging
+  console.log(`[mergeResults DevLog] Merged (${rscripts?.length || 0} Rscripts, ${scriptblox?.length || 0} ScriptBlox) -> Total merged: ${merged.length}`, merged);
 
   return merged;
 }

@@ -6,7 +6,7 @@ import { Flame, Clock, Sparkles, ShieldCheck, Globe, Trophy, ChevronRight } from
 
 interface HomeProps {
   favorites: string[];
-  onToggleFavorite: (id: string) => void;
+  onToggleFavorite: (id: string, script?: Script) => void;
   onExecute: (script: Script) => void;
   onCopy: (script: Script) => void;
   onViewDetails: (script: Script) => void;
@@ -136,19 +136,24 @@ export default function Home({
 
         {/* Dynamic Categorized Grid rendering */}
         <div className="pt-2">
-          <ScriptGrid
-            title={`${activeCategory.label} scripts`}
-            scripts={activeCategory.state.data}
-            loading={activeCategory.state.loading}
-            error={activeCategory.state.error}
-            favorites={favorites}
-            onToggleFavorite={onToggleFavorite}
-            onExecute={onExecute}
-            onCopy={onCopy}
-            onViewDetails={onViewDetails}
-            onRetry={() => {}}
-            theme={theme}
-          />
+          {(() => {
+            console.log(`[Home DevLog] Passing scripts to ScriptGrid for category "${activeCategory.label}":`, activeCategory.state.data);
+            return (
+              <ScriptGrid
+                title={`${activeCategory.label} scripts`}
+                scripts={activeCategory.state.data}
+                loading={activeCategory.state.loading}
+                error={activeCategory.state.error}
+                favorites={favorites}
+                onToggleFavorite={onToggleFavorite}
+                onExecute={onExecute}
+                onCopy={onCopy}
+                onViewDetails={onViewDetails}
+                onRetry={() => {}}
+                theme={theme}
+              />
+            );
+          })()}
         </div>
       </div>
     </div>
