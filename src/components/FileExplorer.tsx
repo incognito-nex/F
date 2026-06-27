@@ -695,7 +695,12 @@ Be extremely helpful, direct, and precise. Analyze files with the utmost care, e
                   getFileIcon(node.name)
                 )}
 
-                <span className={`truncate flex-1 min-w-0 ${isActive ? 'font-semibold font-sans tracking-wide text-zinc-100' : ''}`}>{node.name}</span>
+                <span className={`truncate flex-1 min-w-0 flex items-center gap-1.5 ${isActive ? 'font-semibold font-sans tracking-wide text-zinc-100' : ''}`}>
+                  <span>{node.name}</span>
+                  {node.isFavorite && (
+                    <Star size={11} className="fill-yellow-500 text-yellow-500 shrink-0" />
+                  )}
+                </span>
               </div>
 
               {/* Quick hover nodes */}
@@ -856,8 +861,12 @@ Be extremely helpful, direct, and precise. Analyze files with the utmost care, e
           </div>
 
           {/* Tab content area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-none font-sans">
-            {activeIntegrationTab === 'vscode' ? (
+          <div className="flex-1 flex items-center justify-center p-6 text-center select-none bg-zinc-950/20">
+            {true ? (
+              <span className="font-mono text-xs text-zinc-500 tracking-wide">
+                -- This feature will be implemented in the future.
+              </span>
+            ) : activeIntegrationTab === 'vscode' ? (
               <div className="space-y-4 animate-in fade-in duration-150">
                 {/* VS Code Connection Status Card */}
                 <div 
@@ -1844,145 +1853,163 @@ Be extremely helpful, direct, and precise. Analyze files with the utmost care, e
       )}
 
       {/* Modular HUD Dialogues (Better than standard alerts) */}
-      {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs font-sans p-4">
-          <div 
-            style={{ 
-              backgroundColor: theme.cardBg, 
-              borderColor: theme.borderColor,
-              boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
-            }}
-            className="w-full max-w-sm border rounded-2xl p-5 space-y-4 text-left animate-in fade-in zoom-in-95 duration-150"
-          >
-            <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: theme.borderColor }}>
-              <span className="text-xs font-bold font-mono uppercase tracking-widest text-zinc-300" style={{ color: theme.textMain }}>
-                {activeModal === 'create_file' && 'Create New File'}
-                {activeModal === 'create_folder' && 'Create New Folder'}
-                {activeModal === 'rename' && 'Rename'}
-                {activeModal === 'delete' && 'Delete Item'}
-                {activeModal === 'move' && 'Move Item'}
-              </span>
-              <button 
-                onClick={() => setActiveModal(null)} 
-                className="text-zinc-500 hover:text-white transition cursor-pointer"
-              >
-                <X size={15} />
-              </button>
-            </div>
+      {/* Modular HUD Dialogues (Better than standard alerts) */}
+      <AnimatePresence>
+        {activeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop overlay with blur */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveModal(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
 
-            <form onSubmit={submitModal} className="space-y-4">
-              
-              {/* Conditional parameters based on modal actions */}
-              {(activeModal === 'create_file' || activeModal === 'create_folder' || activeModal === 'rename') && (
-                <div className="space-y-1">
-                  <label className="text-[9px] font-mono font-bold tracking-widest uppercase block" style={{ color: theme.accent }}>Name:</label>
-                  <input
-                    autoFocus
-                    type="text"
-                    value={modalInputValue}
-                    onChange={(e) => {
-                      setModalInputValue(e.target.value);
-                      setModalError(null);
-                    }}
-                    className="w-full py-2 px-3 border rounded-xl font-mono text-xs focus:outline-none focus:border-zinc-500"
-                    style={{
-                      backgroundColor: theme.isLight ? '#f4f4f5' : '#07080a',
-                      color: theme.textMain,
-                      borderColor: theme.borderColor
-                    }}
-                  />
-                </div>
-              )}
-
-              {activeModal === 'delete' && (
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3 text-xs leading-relaxed">
-                    <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={16} />
-                    <p className="text-zinc-300" style={{ color: theme.textMain }}>
-                      Are you absolutely sure you want to permanently delete this item? This operation cannot be undone.
-                    </p>
-                  </div>
-                  <label className="flex items-center space-x-2.5 text-[11px] text-zinc-400 hover:text-zinc-200 cursor-pointer select-none py-1">
-                    <input
-                      type="checkbox"
-                      checked={dontAskDelete}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setDontAskDelete(checked);
-                        localStorage.setItem('skip_delete_confirmation', checked ? 'true' : 'false');
-                      }}
-                      className="rounded border-zinc-700 bg-black/40 text-rose-500 focus:ring-rose-500 h-3.5 w-3.5"
-                    />
-                    <span>Don't ask next time</span>
-                  </label>
-                </div>
-              )}
-
-              {activeModal === 'move' && (
-                <div className="space-y-2 text-left">
-                  <label className="text-[9px] font-mono font-bold tracking-widest uppercase block" style={{ color: theme.accent }}>Folder Destination:</label>
-                  <div 
-                    className="border rounded-xl max-h-40 overflow-y-auto divide-y font-mono text-xs select-none"
-                    style={{ 
-                      borderColor: theme.borderColor,
-                      backgroundColor: theme.isLight ? '#f4f4f5' : '#07080a'
-                    }}
+            {/* Modal body container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              style={{
+                backgroundColor: theme.cardBg,
+                borderColor: theme.borderColor,
+              }}
+              className="relative w-full max-w-[340px] border rounded-3xl p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] font-sans text-left overflow-hidden select-none"
+            >
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-1">
+                  <span className="text-[13px] font-bold font-poppins tracking-wide text-zinc-100" style={{ color: theme.textMain }}>
+                    {activeModal === 'create_file' && 'Create File'}
+                    {activeModal === 'create_folder' && 'Create Folder'}
+                    {activeModal === 'rename' && 'Rename Item'}
+                    {activeModal === 'delete' && 'Delete Item'}
+                    {activeModal === 'move' && 'Move Item'}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveModal(null)} 
+                    className="text-zinc-500 hover:text-zinc-300 transition cursor-pointer p-1.5 rounded-full hover:bg-zinc-800/20"
                   >
-                    {/* All other folders */}
-                    {files.filter(f => f.type === 'folder' && f.id !== modalNodeId).map((folder) => {
-                      const isSelected = modalParentId === folder.id;
-                      return (
-                        <div
-                          key={folder.id}
-                          onClick={() => setModalParentId(folder.id)}
-                          className="flex items-center space-x-2 p-2 px-3 cursor-pointer transition hover:bg-zinc-800/10"
-                          style={{
-                            backgroundColor: isSelected ? `${theme.accent}1c` : 'transparent',
-                            color: isSelected ? theme.textMain : theme.textMuted,
-                            borderLeft: isSelected ? `3px solid ${theme.accent}` : '3px solid transparent'
-                          }}
-                        >
-                          <Folder size={13} style={{ color: '#d29a38' }} className="shrink-0" />
-                          <span>{folder.name}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                    <X size={14} />
+                  </button>
                 </div>
-              )}
 
-              {modalError && (
-                <p className="text-[10px] text-rose-500 font-semibold font-mono uppercase">{modalError}</p>
-              )}
+                <form onSubmit={submitModal} className="space-y-4">
+                  {/* Conditional parameters based on modal actions */}
+                  {(activeModal === 'create_file' || activeModal === 'create_folder' || activeModal === 'rename') && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-mono font-semibold tracking-wider text-zinc-400 block uppercase">Name:</label>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={modalInputValue}
+                        onChange={(e) => {
+                          setModalInputValue(e.target.value);
+                          setModalError(null);
+                        }}
+                        className="w-full py-2.5 px-3.5 border rounded-xl font-mono text-xs transition duration-150 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                        style={{
+                          backgroundColor: theme.isLight ? '#f4f4f5' : '#07080a',
+                          color: theme.textMain,
+                          borderColor: theme.borderColor,
+                        }}
+                      />
+                    </div>
+                  )}
 
-              <div className="flex items-center justify-end space-x-2 pt-2 border-t" style={{ borderColor: theme.borderColor }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal(null)}
-                  className="px-3.5 py-1.5 text-[10px] font-mono hover:bg-zinc-800/10 rounded-lg text-zinc-400 uppercase transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 text-[10px] font-mono font-bold rounded-lg uppercase transition hover:opacity-90 cursor-pointer"
-                  style={{ 
-                    backgroundColor: activeModal === 'delete' ? '#ef4444' : theme.accent,
-                    color: activeModal === 'delete' ? '#ffffff' : (theme.isLight ? '#ffffff' : '#000000')
-                  }}
-                >
-                  {activeModal === 'delete' && 'Delete'}
-                  {activeModal === 'create_file' && 'Create'}
-                  {activeModal === 'create_folder' && 'Create'}
-                  {activeModal === 'rename' && 'Rename'}
-                  {activeModal === 'move' && 'Move'}
-                </button>
+                  {activeModal === 'delete' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start space-x-3 text-xs leading-relaxed">
+                        <AlertTriangle className="text-rose-500 shrink-0 mt-0.5 animate-pulse" size={16} />
+                        <p className="text-zinc-300" style={{ color: theme.textMain }}>
+                          Are you absolutely sure you want to permanently delete this item? This operation cannot be undone.
+                        </p>
+                      </div>
+                      <label className="flex items-center space-x-2.5 text-[11px] text-zinc-400 hover:text-zinc-250 cursor-pointer select-none py-1">
+                        <input
+                          type="checkbox"
+                          checked={dontAskDelete}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setDontAskDelete(checked);
+                            localStorage.setItem('skip_delete_confirmation', checked ? 'true' : 'false');
+                          }}
+                          className="rounded border-zinc-750 bg-black/40 text-rose-500 focus:ring-rose-500 focus:ring-offset-0 h-3.5 w-3.5"
+                        />
+                        <span>Don't ask next time</span>
+                      </label>
+                    </div>
+                  )}
+
+                  {activeModal === 'move' && (
+                    <div className="space-y-2 text-left">
+                      <label className="text-[10px] font-mono font-semibold tracking-wider text-zinc-400 block uppercase">Folder Destination:</label>
+                      <div 
+                        className="border rounded-xl max-h-40 overflow-y-auto divide-y font-mono text-xs select-none scrollbar-thin scrollbar-thumb-zinc-700"
+                        style={{ 
+                          borderColor: theme.borderColor,
+                          backgroundColor: theme.isLight ? '#f4f4f5' : '#07080a'
+                        }}
+                      >
+                        {/* All other folders */}
+                        {files.filter(f => f.type === 'folder' && f.id !== modalNodeId).map((folder) => {
+                          const isSelected = modalParentId === folder.id;
+                          return (
+                            <div
+                              key={folder.id}
+                              onClick={() => setModalParentId(folder.id)}
+                              className="flex items-center space-x-2 p-2.5 px-3.5 cursor-pointer transition"
+                              style={{
+                                backgroundColor: isSelected ? `${theme.accent}1c` : 'transparent',
+                                color: isSelected ? theme.textMain : theme.textMuted,
+                                borderLeft: isSelected ? `3px solid ${theme.accent}` : '3px solid transparent'
+                              }}
+                            >
+                              <Folder size={13} style={{ color: '#d29a38' }} className="shrink-0" />
+                              <span className="truncate">{folder.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {modalError && (
+                    <p className="text-[10px] text-rose-500 font-bold font-mono uppercase tracking-wide">{modalError}</p>
+                  )}
+
+                  <div className="flex items-center justify-end space-x-2 pt-2 border-t" style={{ borderColor: theme.borderColor }}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal(null)}
+                      className="px-4 py-2 text-[10px] font-sans font-semibold tracking-wider text-zinc-400 hover:text-zinc-250 hover:bg-zinc-800/10 rounded-xl uppercase transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 text-[10px] font-sans font-bold tracking-wider rounded-xl uppercase transition hover:opacity-90 active:scale-95 cursor-pointer shadow-sm"
+                      style={{ 
+                        backgroundColor: activeModal === 'delete' ? '#ef4444' : theme.accent,
+                        color: activeModal === 'delete' ? '#ffffff' : (theme.isLight ? '#ffffff' : '#000000')
+                      }}
+                    >
+                      {activeModal === 'delete' && 'Delete'}
+                      {activeModal === 'create_file' && 'Create'}
+                      {activeModal === 'create_folder' && 'Create'}
+                      {activeModal === 'rename' && 'Rename'}
+                      {activeModal === 'move' && 'Move'}
+                    </button>
+                  </div>
+                </form>
               </div>
-
-            </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

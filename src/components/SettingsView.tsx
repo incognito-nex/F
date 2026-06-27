@@ -243,10 +243,7 @@ export default function SettingsView({
           ...prev,
           keybinds: {
             ...(prev.keybinds || {
-              toggleCommandPalette: 'Ctrl+P',
-              autoFixSyntax: 'Ctrl+Shift+F',
-              obfuscateScript: 'Ctrl+Shift+O',
-              deobfuscateScript: 'Ctrl+Shift+D'
+              toggleCommandPalette: 'Ctrl+P'
             }),
             [recordingField]: recordedString
           }
@@ -1189,31 +1186,10 @@ export default function SettingsView({
                   label: 'Toggle Command Palette',
                   desc: 'Opens/closes the universal command menu and file locator',
                   default: 'Ctrl+P'
-                },
-                {
-                  id: 'autoFixSyntax',
-                  label: 'Auto-Fix Lua Syntax',
-                  desc: 'Corrects unclosed tags, strings, brackets, and block endings in active script',
-                  default: 'Ctrl+Shift+F'
-                },
-                {
-                  id: 'obfuscateScript',
-                  label: 'Obfuscate Active Script',
-                  desc: 'Applies control flow flattening and XOR AST protections to script',
-                  default: 'Ctrl+Shift+O'
-                },
-                {
-                  id: 'deobfuscateScript',
-                  label: 'Deobfuscate Active Script',
-                  desc: 'Extracts VM bytecode and restores the closest original Lua representation',
-                  default: 'Ctrl+Shift+D'
                 }
               ].map((item) => {
                 const currentBinds = settings.keybinds || {
-                  toggleCommandPalette: 'Ctrl+P',
-                  autoFixSyntax: 'Ctrl+Shift+F',
-                  obfuscateScript: 'Ctrl+Shift+O',
-                  deobfuscateScript: 'Ctrl+Shift+D'
+                  toggleCommandPalette: 'Ctrl+P'
                 };
                 const value = currentBinds[item.id as keyof typeof currentBinds] || item.default;
                 const isRecording = recordingField === item.id;

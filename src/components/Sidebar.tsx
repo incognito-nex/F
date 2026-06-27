@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, LayoutGroup, AnimatePresence } from 'motion/react';
-import { LayoutGrid, Code2, Compass, Sliders, Cpu, Fingerprint, Shield, X } from 'lucide-react';
+import { LayoutGrid, Code2, Compass, Sliders, Cpu, Fingerprint, Shield, X, Key } from 'lucide-react';
 import { AppTheme, UserSettings } from '../types';
 
 interface SidebarProps {
@@ -29,8 +29,15 @@ export default function Sidebar({
     { id: 'scripts', label: 'Scripts', icon: <Compass size={18} /> },
     ...(settings.experimental?.multiAccountInjection ? [{ id: 'multiaccount', label: 'Multi-Account', icon: <Cpu size={18} /> }] : []),
     { id: 'settings', label: 'Settings', icon: <Sliders size={18} /> },
-    { id: 'about', label: 'Workspace Info', icon: <Fingerprint size={18} /> },
+    { id: 'about', label: 'Key Management', icon: <Key size={18} /> },
   ];
+
+  const smoothTransition = {
+    type: "spring" as const,
+    stiffness: 350,
+    damping: 30,
+    mass: 1
+  };
 
   return (
     <div className="h-full flex items-center relative select-none px-1">
@@ -39,7 +46,7 @@ export default function Sidebar({
           {menuItems.map((item) => {
             const isActive = activeSection === item.id;
             const isHovered = hoveredId === item.id;
-            const isExpanded = isActive;
+            const isExpanded = isActive; // Only expand the active item to prevent layout shift glitches on hover
 
             return (
               <motion.button
@@ -49,37 +56,47 @@ export default function Sidebar({
                 onClick={() => setActiveSection(item.id)}
                 onMouseEnter={() => setHoveredId(item.id)}
                 onMouseLeave={() => setHoveredId(null)}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.96 }}
-                transition={{
-                  type: "tween",
-                  duration: 0.25,
-                  ease: "easeInOut"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                animate={{
+                  paddingLeft: isExpanded ? '14px' : '11px',
+                  paddingRight: isExpanded ? '14px' : '11px',
+                  minWidth: isExpanded ? '112px' : '40px',
                 }}
-                className="h-10 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border border-transparent bg-transparent relative cursor-pointer outline-none transition-colors duration-300 hover:bg-zinc-800/10 dark:hover:bg-white/10"
+                transition={smoothTransition}
+                className="h-10 flex items-center justify-center rounded-xl text-xs font-semibold font-sans border border-transparent bg-transparent relative cursor-pointer outline-none select-none"
                 style={{
                   color: isActive ? theme.textMain : theme.textMuted,
                   boxShadow: 'none',
-                  paddingLeft: isExpanded ? '14px' : '11px',
-                  paddingRight: isExpanded ? '14px' : '11px',
-                  minWidth: isExpanded ? '110px' : '40px',
                 }}
                 title={item.label}
               >
+                {/* Smooth sliding hovered background pill for inactive items */}
+                {isHovered && !isActive && (
+                  <motion.div
+                    layoutId="top-bar-hover-pill"
+                    className="absolute inset-0 rounded-xl -z-10"
+                    style={{
+                      backgroundColor: theme.isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)',
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+
                 {/* Dynamic Non-Stretching Smooth Linear Active Indicator at Bottom */}
                 {isActive && (
                   <motion.div
                     layoutId="top-bar-active-indicator"
-                    className="absolute bottom-0 h-[2.5px] rounded-t-full w-[20px] z-50 left-1/2 -translate-x-1/2"
+                    className="absolute bottom-0 h-[3px] rounded-t-full w-[24px] z-50 left-[calc(50%-12px)]"
                     style={{
                       backgroundColor: theme.accent,
-                      boxShadow: `0 -1px 10px ${theme.accent}, 0 0 2px ${theme.accent}aa`,
+                      boxShadow: `0 -1.5px 12px ${theme.accent}, 0 0 3px ${theme.accent}aa`,
                     }}
-                    transition={{
-                      type: "tween",
-                      duration: 0.45,
-                      ease: "easeInOut"
-                    }}
+                    transition={smoothTransition}
                   />
                 )}
 
@@ -99,11 +116,7 @@ export default function Sidebar({
                       initial={{ opacity: 0, width: 0, marginLeft: 0 }}
                       animate={{ opacity: 1, width: 'auto', marginLeft: 8 }}
                       exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      transition={{
-                        type: "tween",
-                        duration: 0.45,
-                        ease: "easeInOut"
-                      }}
+                      transition={smoothTransition}
                       className="overflow-hidden whitespace-nowrap text-[11px] uppercase tracking-wider font-bold"
                       style={{ color: isActive ? theme.textMain : theme.textMuted }}
                     >

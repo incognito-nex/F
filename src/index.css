@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700;800&family=Syncopate:wght@700&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 html, body, #root {
   margin: 0;
@@ -12,6 +12,10 @@ html, body, #root {
 
 .font-syncopate {
   font-family: 'Syncopate', sans-serif;
+}
+
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
 }
 
 .font-space {
@@ -89,3 +93,102 @@ html, body, #root {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Monaco Editor Custom Black Theme Overrides */
+.monaco-menu-container.interactive-submenu,
+.monaco-menu-container,
+.monaco-editor .monaco-menu {
+  background-color: #030406 !important;
+  border: 1px solid #1a1b24 !important;
+  box-shadow: 0 12px 45px rgba(0,0,0,0.85) !important;
+  border-radius: 12px !important;
+  padding: 5px 3px !important;
+}
+
+.monaco-editor .monaco-menu .action-label,
+.monaco-editor .monaco-menu .action-menu-item {
+  color: #d1d1db !important;
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+}
+
+.monaco-editor .monaco-menu .action-item.focused,
+.monaco-editor .monaco-menu .action-item:focus {
+  background-color: #12131a !important;
+  color: #ffffff !important;
+}
+
+.monaco-editor .monaco-menu .action-menu-item:hover,
+.monaco-editor .monaco-menu .action-item:hover {
+  background-color: #12131a !important;
+  color: #ffffff !important;
+}
+
+.monaco-editor .monaco-menu .keybinding {
+  color: #5d5e69 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 9px !important;
+}
+
+/* Command Palette (Ctrl+P) and Quick Open UI inputs */
+.monaco-editor .quick-input-widget {
+  background-color: #030406 !important;
+  border: 1px solid #1a1b24 !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.9) !important;
+  border-radius: 16px !important;
+  color: #f1f5f9 !important;
+  padding: 10px !important;
+}
+
+.monaco-editor .quick-input-widget .quick-input-filter {
+  background-color: #07080a !important;
+  border: 1px solid #181921 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 5px 8px !important;
+}
+
+.monaco-editor .quick-input-widget .monaco-list-row {
+  border-radius: 6px !important;
+  color: #a1a1aa !important;
+}
+
+.monaco-editor .quick-input-widget .monaco-list-row.focused,
+.monaco-editor .quick-input-widget .monaco-list-row:focus {
+  background-color: #12131a !important;
+  color: #ffffff !important;
+}
+
+.monaco-editor .quick-input-widget .monaco-list-row:hover {
+  background-color: #0a0b0e !important;
+  color: #ffffff !important;
+}
+
+/* Autocomplete suggestions dropdown panel */
+.monaco-editor .suggest-widget {
+  background-color: #030406 !important;
+  border: 1px solid #1a1b24 !important;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.85) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row {
+  color: #c4c5cf !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row.focused,
+.monaco-editor .suggest-widget .monaco-list-row:focus {
+  background-color: #12131a !important;
+  color: #ffffff !important;
+}
+
+/* Inline editor hovers / parameter info tooltips */
+.monaco-editor .hover-widget {
+  background-color: #030406 !important;
+  border: 1px solid #1a1b24 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.8) !important;
+}
+

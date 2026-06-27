@@ -14,6 +14,7 @@ export interface FileNode {
 export interface TabItem {
   fileId: string;
   isPinned: boolean;
+  isPinnedStandard?: boolean;
   isUnsaved?: boolean;
 }
 

@@ -40,6 +40,30 @@ export default function App() {
   // Fetch status color from tracker on mount
   const [statusColorText, setStatusColorText] = useState('green');
   useEffect(() => {
+    // Suppress benign third-party and Monaco errors
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (
+        event.reason && 
+        (event.reason.type === 'cancelation' || 
+         event.reason.message === 'Canceled' ||
+         (typeof event.reason.message === 'string' && event.reason.message.includes('Canceled')) ||
+         (typeof event.reason === 'object' && event.reason.type === 'cancelation'))
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      if (event.message && (event.message.includes('ResizeObserver') || event.message.includes('loop completed'))) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
     const fetchStatusColor = async () => {
       try {
         const response = await fetch('https://raw.githubusercontent.com/incognito-updates/tracker/refs/heads/main/colour');
@@ -54,6 +78,11 @@ export default function App() {
       }
     };
     fetchStatusColor();
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
   }, []);
 
   // Command Palette
@@ -387,9 +416,7 @@ export default function App() {
       
       const signature = Math.random().toString(16).substring(2, 10).toUpperCase() + Math.random().toString(16).substring(2, 10).toUpperCase();
 
-      const obfuscated = `-- [[ INCOGNITO LOCALIZED PYTHON AST VM OBFUSCATOR v4.0 ]]
--- [[ PREMIUM HARDENED WORKSPACE PROTECTION - CONTROL-FLOW FLATTENED ]]
--- [[ SIGNATURE INTEGRITY CHECKSUM: ${signature} ]]
+      const obfuscated = `--[Obfuscated by inco3]
 
 local _py_vm_xor_key = ${secureXorKey}
 local _py_vm_bytecode = {${encryptedBytes.join(', ')}}
@@ -1026,11 +1053,7 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
       const target = e.target as HTMLElement;
       const isInputFocused = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
 
-      if (matchesKeybind(e, activeKeybinds.toggleCommandPalette)) {
-        e.preventDefault();
-        setIsPaletteOpen(prev => !prev);
-        return;
-      }
+
 
       if (isInputFocused && target.tagName === 'INPUT') {
         return;
@@ -1085,7 +1108,12 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
     setActiveFileId(fileId);
     // Add file to tabs if not already open
     if (!tabs.some(t => t.fileId === fileId)) {
-      setTabs(prev => [...prev, { fileId, isPinned: false }]);
+      const isFav = files.find(f => f.id === fileId)?.isFavorite;
+      if (isFav) {
+        setTabs(prev => [{ fileId, isPinned: false }, ...prev]);
+      } else {
+        setTabs(prev => [...prev, { fileId, isPinned: false }]);
+      }
     }
     setActiveSection('editor');
     addTerminalLine(`Loaded file node buffer index: ${files.find(f => f.id === fileId)?.name}`, 'info');
@@ -1155,6 +1183,20 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
       if (f.id === id) {
         const nextVal = !f.isFavorite;
         addTerminalLine(`Updated favorite registry state: ${f.name} = ${nextVal}`, 'info');
+        
+        if (nextVal) {
+          // Move tab to the front of the tabs list if it's open
+          setTabs(prevTabs => {
+            const index = prevTabs.findIndex(t => t.fileId === id);
+            if (index !== -1) {
+              const reordered = [...prevTabs];
+              const [removed] = reordered.splice(index, 1);
+              return [removed, ...reordered];
+            }
+            return prevTabs;
+          });
+        }
+        
         return { ...f, isFavorite: nextVal };
       }
       return f;
@@ -1497,15 +1539,18 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
               style={{ borderColor: currentTheme.borderColor }}
               className="flex-1 h-full flex items-center justify-between px-4"
             >
-              {/* Left part: text incognito */}
+              {/* Left part: text inco3 */}
               <div className="flex items-center space-x-4">
-                <span className={`font-sans font-black lowercase text-[24px] tracking-[-0.07em] leading-none select-none flex items-baseline ${
-                  currentTheme.isLight ? 'text-zinc-950' : 'text-white'
-                }`}>
+                <span 
+                  style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
+                  className={`lowercase text-[18px] tracking-[-0.05em] leading-none select-none flex items-baseline ${
+                    currentTheme.isLight ? 'text-zinc-950' : 'text-white'
+                  }`}
+                >
                   inco
                   <span 
-                    style={{ color: currentTheme.accent }} 
-                    className="text-[26px] font-black tracking-[-0.03em] ml-[-1.5px]"
+                    style={{ color: currentTheme.accent, fontFamily: "'Poppins', sans-serif", fontWeight: 300 }} 
+                    className="ml-[0.5px]"
                   >
                     3
                   </span>
@@ -1696,6 +1741,7 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                           theme={currentTheme}
                           settings={settings}
                           setActiveSection={setActiveSection}
+                          triggerToast={triggerToast}
                         />
                       </motion.div>
                     )}
@@ -1777,7 +1823,6 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                         <AboutView
                           theme={currentTheme}
                           settings={settings}
-                          files={files}
                         />
                       </motion.div>
                     )}
@@ -1800,41 +1845,41 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setSyntaxModalResult(null)}
-                  className="absolute inset-0 bg-black/75 backdrop-blur-xs"
+                  className="absolute inset-0 bg-black/60 backdrop-blur-md"
                 />
 
                 {/* Modal body */}
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                  transition={{ duration: 0.2 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   style={{
                     backgroundColor: currentTheme.cardBg,
                     borderColor: currentTheme.borderColor
                   }}
-                  className="relative w-full max-w-md border rounded-2xl overflow-hidden shadow-2xl p-6 font-sans text-left"
+                  className="relative w-full max-w-sm border rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] p-6 font-sans text-left select-none"
                 >
                   <div className="space-y-4">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: currentTheme.borderColor }}>
+                    <div className="flex items-center justify-between pb-1">
                       <div className="flex items-center space-x-2">
                         {syntaxModalResult.success ? (
-                          <div className="w-5 h-5 rounded-full bg-green-500/15 text-green-500 flex items-center justify-center font-bold">
-                            ✔
+                          <div className="w-5 h-5 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center font-bold text-xs">
+                            ✓
                           </div>
                         ) : (
-                          <div className="w-5 h-5 rounded-full bg-rose-500/15 text-rose-500 flex items-center justify-center font-bold text-xs">
+                          <div className="w-5 h-5 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-[10px]">
                             ✕
                           </div>
                         )}
-                        <h3 className="text-xs font-bold font-mono uppercase tracking-wider" style={{ color: currentTheme.textMain }}>
-                          {syntaxModalResult.success ? 'Syntax Verified' : 'Syntax Error Detected'}
+                        <h3 className="text-[13px] font-bold font-poppins tracking-wide" style={{ color: currentTheme.textMain }}>
+                          {syntaxModalResult.success ? 'Syntax Verified' : 'Syntax Error'}
                         </h3>
                       </div>
                       <button
                         onClick={() => setSyntaxModalResult(null)}
-                        className="text-zinc-500 hover:text-zinc-300 transition text-[10px] font-bold font-mono"
+                        className="text-zinc-500 hover:text-zinc-300 transition text-[10px] font-bold font-mono p-1 rounded hover:bg-zinc-800/15"
                       >
                         [ESC]
                       </button>
@@ -1842,7 +1887,7 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
 
                     {/* Content */}
                     <div className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                      <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider text-zinc-400">
                         <span>Target File:</span>
                         <span style={{ color: currentTheme.accent }} className="font-bold">{syntaxModalResult.fileName || 'Unknown'}</span>
                       </div>
@@ -1852,12 +1897,12 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                       </p>
 
                       {syntaxModalResult.lineNumber && (
-                        <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-800/80 font-mono space-y-1.5">
+                        <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-850 font-mono space-y-1">
                           <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
                             <span>Diagnostic Highlight:</span>
                             <span>Line {syntaxModalResult.lineNumber}</span>
                           </div>
-                          <div className="text-xs text-rose-400 overflow-x-auto whitespace-pre font-bold p-1">
+                          <div className="text-xs text-rose-400 overflow-x-auto whitespace-pre font-bold pt-1">
                             {syntaxModalResult.lineText || '(Empty line)'}
                           </div>
                         </div>
@@ -1865,15 +1910,14 @@ function matchesKeybind(e: KeyboardEvent, keybindStr: string): boolean {
                     </div>
 
                     {/* Footer buttons */}
-                    <div className="pt-3 border-t flex justify-end" style={{ borderColor: currentTheme.borderColor }}>
+                    <div className="pt-2 border-t flex justify-end" style={{ borderColor: currentTheme.borderColor }}>
                       <button
                         onClick={() => setSyntaxModalResult(null)}
                         style={{
-                          backgroundColor: syntaxModalResult.success ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                          backgroundColor: syntaxModalResult.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
                           color: syntaxModalResult.success ? '#22c55e' : '#ef4444',
-                          borderColor: syntaxModalResult.success ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'
                         }}
-                        className="px-5 py-2 border rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider hover:opacity-95 active:scale-95 transition cursor-pointer"
+                        className="px-5 py-2 rounded-xl font-sans text-[10px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition cursor-pointer"
                       >
                         Acknowledge & Close
                       </button>

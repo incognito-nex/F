@@ -99,7 +99,18 @@ export default function EditorView({
             [/\d+/, 'number'],
             [/"([^"\\]|\\.)*"/, 'string'],
             [/'([^'\\]|\\.)*'/, 'string'],
+            [/--\[([=]*)\[/, 'comment', '@comment.$1'],
             [/--.*$/, 'comment'],
+          ],
+          comment: [
+            [/[^\]]+/, 'comment'],
+            [/\]([=]*)\]/, {
+              cases: {
+                '$1==$S2': { token: 'comment', next: '@pop' },
+                '@default': 'comment'
+              }
+            }],
+            [/./, 'comment']
           ]
         }
       });

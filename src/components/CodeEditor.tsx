@@ -34,8 +34,7 @@ const obfuscateLuauCode = (code: string): string => {
   for (let i = 0; i < bytes.length; i += 25) {
     chunks.push(`string.char(${bytes.slice(i, i + 25).join(',')})`);
   }
-  return `-- [!] INCOGNITO ENGINE SECURITY: LUAU OBFUSCATION INTEGRITY MODULE v5.0\n` +
-         `-- ENCRYPTION TIME: ${new Date().toISOString()}\n` +
+  return `--[Obfuscated by inco3]\n` +
          `local _0xIncognitoPayload = {\n` +
          `  payload = ${chunks.join(' .. \n  ')}\n` +
          `}\n` +
@@ -507,7 +506,18 @@ function CodeEditorInner({
 
         whitespace: [
           [/[ \t\r\n]+/, 'white'],
-          [/--.*$/, 'comment'], // Luau dual dashes for comment
+          [/--\[([=]*)\[/, 'comment', '@comment.$1'],
+          [/--.*$/, 'comment'],
+        ],
+        comment: [
+          [/[^\]]+/, 'comment'],
+          [/\]([=]*)\]/, {
+            cases: {
+              '$1==$S2': { token: 'comment', next: '@pop' },
+              '@default': 'comment'
+            }
+          }],
+          [/./, 'comment']
         ],
       },
     });
@@ -727,15 +737,34 @@ function CodeEditorInner({
   };
 
   const handleCloseOthers = (fId: string) => {
-    const filtered = tabs.filter(t => t.fileId === fId || t.isPinned);
+    const filtered = tabs.filter(t => t.fileId === fId || t.isPinned || t.isPinnedStandard);
     setTabs(filtered);
     setActiveFileId(fId);
   };
 
-  const handleTogglePin = (fId: string) => {
+  const handleTogglePinAnchor = (fId: string) => {
     setTabs(prev => prev.map(t => {
       if (t.fileId === fId) {
-        return { ...t, isPinned: !t.isPinned };
+        const isCurrentlyAnchor = t.isPinned && !t.isPinnedStandard;
+        return { 
+          ...t, 
+          isPinned: !isCurrentlyAnchor, 
+          isPinnedStandard: false 
+        };
+      }
+      return t;
+    }));
+  };
+
+  const handleTogglePinStandard = (fId: string) => {
+    setTabs(prev => prev.map(t => {
+      if (t.fileId === fId) {
+        const isCurrentlyStandard = !!t.isPinnedStandard;
+        return { 
+          ...t, 
+          isPinned: !isCurrentlyStandard, 
+          isPinnedStandard: !isCurrentlyStandard 
+        };
       }
       return t;
     }));
@@ -805,20 +834,29 @@ function CodeEditorInner({
     return () => window.removeEventListener('click', closeTabMenu);
   }, []);
 
-  // Sort Pinned first, then normal tabs
+  // Sort Pinned Anchor first, then normal & standard tabs
   const sortedTabs = [...tabs].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
+    const aAnchor = a.isPinned && !a.isPinnedStandard;
+    const bAnchor = b.isPinned && !b.isPinnedStandard;
+    if (aAnchor && !bAnchor) return -1;
+    if (!aAnchor && bAnchor) return 1;
     return 0; // maintain relative order otherwise
   });
 
   // Reorder dragging handlers
   const handleDragStart = (e: React.DragEvent, fId: string) => {
     setDraggedFileId(fId);
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', fId);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetFId: string) => {
@@ -943,6 +981,7 @@ function CodeEditorInner({
                   id={`editor-tab-${tb.fileId}`}
                   draggable
                   onDragStart={(e: any) => handleDragStart(e, tb.fileId)}
+                  onDragEnd={() => setDraggedFileId(null)}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, tb.fileId)}
                   onContextMenu={(e) => handleRightClickTab(e, tb.fileId)}
@@ -950,6 +989,7 @@ function CodeEditorInner({
                   style={{
                     backgroundColor: isCurrent ? theme.editorBg : 'transparent',
                     borderColor: theme.borderColor,
+                    opacity: draggedFileId === tb.fileId ? 0.45 : 1,
                   }}
                   className={`group cursor-pointer relative text-[11px] min-w-[120px] max-w-[200px] flex-1 shrink-0 overflow-visible flex items-center justify-between px-3.5 h-full transition-colors duration-75 ${
                     isCurrent 
@@ -995,10 +1035,13 @@ function CodeEditorInner({
                       className="shrink-0 transition-all duration-200" 
                     />
                     
-                    <span className={`truncate font-mono text-[10px] transition-all duration-200 ${
+                    <span className={`truncate font-mono text-[10px] transition-all duration-200 flex items-center gap-1.5 ${
                       isCurrent ? 'tracking-wide text-zinc-100 font-medium' : 'text-zinc-400 group-hover:text-zinc-200'
                     }`}>
-                      {fileItem.name}
+                      <span>{fileItem.name}</span>
+                      {fileItem.isFavorite && (
+                        <Star size={10} className="fill-yellow-500 text-yellow-500 shrink-0" />
+                      )}
                     </span>
                   </div>
 
@@ -1020,8 +1063,8 @@ function CodeEditorInner({
                         }}
                         className={`absolute inset-0 w-4 h-4 rounded flex items-center justify-center transition-all duration-75 cursor-pointer z-10 ${
                           isCurrent
-                            ? 'opacity-80 hover:opacity-100 hover:bg-zinc-800/60 dark:hover:bg-white/10 text-zinc-400 hover:text-zinc-100'
-                            : 'opacity-0 group-hover:opacity-100 hover:bg-zinc-800/40 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-200'
+                            ? 'opacity-85 hover:opacity-100 hover:bg-zinc-800/60 dark:hover:bg-white/10 text-zinc-400 hover:text-zinc-100'
+                            : 'opacity-50 hover:opacity-100 hover:bg-zinc-850/40 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-200'
                         }`}
                         title="Close Tab"
                       >
@@ -1103,8 +1146,48 @@ function CodeEditorInner({
                 language="lua"
                 path={activeFileId}
                 defaultValue={activeFile?.content || ''}
-                onMount={(editor) => {
+                onMount={(editor, monacoInstance) => {
                   editorRef.current = editor;
+                  if (monacoInstance) {
+                    editor.addCommand(
+                      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyP,
+                      () => {
+                        editor.trigger('anyString', 'editor.action.quickCommand', {});
+                      }
+                    );
+
+                    // 1. Insert line below: Ctrl + Space (disables suggest on Ctrl+Space)
+                    editor.addCommand(
+                      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Space,
+                      () => {
+                        editor.trigger('keyboard', 'editor.action.insertLineAfter', {});
+                      }
+                    );
+
+                    // 2. Trigger Suggest: Ctrl + Alt
+                    editor.addCommand(
+                      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyMod.Alt,
+                      () => {
+                        editor.trigger('keyboard', 'editor.action.triggerSuggest', {});
+                      }
+                    );
+
+                    // 3. Format Document: Ctrl + Shift + F
+                    editor.addCommand(
+                      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyMod.Shift | monacoInstance.KeyCode.KeyF,
+                      () => {
+                        editor.trigger('keyboard', 'editor.action.formatDocument', {});
+                      }
+                    );
+
+                    // 4. Duplicate Line Down: Ctrl + D
+                    editor.addCommand(
+                      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyD,
+                      () => {
+                        editor.trigger('keyboard', 'editor.action.copyLinesDownAction', {});
+                      }
+                    );
+                  }
                 }}
                 onChange={handleEditorChange}
                 theme="incognitoTheme"
@@ -1318,18 +1401,17 @@ function CodeEditorInner({
             </div>
 
             {/* Float Save alert */}
-            {tabs.find(t => t.fileId === activeFileId)?.isUnsaved && (
-              <div 
-                className="absolute bottom-18 right-4 border backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center space-x-2 font-mono text-[10px] z-10 shadow-lg"
-                style={{ 
-                  backgroundColor: `${theme.accent}14`, 
-                  borderColor: `${theme.accent}40`,
-                  color: theme.accent
-                }}
+            {tabs.find(t => t.fileId === activeFileId)?.isUnsaved && !settings.editor.autoSave && settings.editor.autoScriptSave === false && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute bottom-18 right-4 border backdrop-blur-md px-3.5 py-2 rounded-xl flex items-center space-x-2 font-mono text-[10px] z-10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] border-amber-500/30 bg-amber-500/5 text-amber-500"
               >
-                <AlertCircle size={12} className="shrink-0" />
-                <span>Unsaved changes. Ctrl+S to save code state.</span>
-              </div>
+                <AlertCircle size={12} className="shrink-0 animate-pulse text-amber-500" />
+                <span className="font-sans font-semibold tracking-wide text-amber-500/90">Unsaved changes. Press <kbd className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-[9px] font-mono text-zinc-300">Ctrl + S</kbd> to save.</span>
+              </motion.div>
             )}
           </div>
         ) : (
@@ -1377,12 +1459,29 @@ function CodeEditorInner({
             <span>Rename File Tab</span>
           </button>
 
-          <button
-            onClick={() => handleTogglePin(activeTabMenu.fileId)}
-            className="px-3.5 py-1.5 text-left text-zinc-300 hover:bg-zinc-800/40 hover:text-white transition flex items-center space-x-2"
-          >
-            <span>Pin Standard Anchor</span>
-          </button>
+          {(() => {
+            const currentTab = tabs.find(t => t.fileId === activeTabMenu.fileId);
+            const isPinnedAnchor = currentTab?.isPinned && !currentTab?.isPinnedStandard;
+            const isPinnedStandard = currentTab?.isPinnedStandard;
+            
+            return (
+              <>
+                <button
+                  onClick={() => handleTogglePinAnchor(activeTabMenu.fileId)}
+                  className="px-3.5 py-1.5 text-left text-zinc-300 hover:bg-zinc-800/40 hover:text-white transition flex items-center space-x-2"
+                >
+                  <span>{isPinnedAnchor ? 'Unpin Anchor' : 'Pin Anchor'}</span>
+                </button>
+
+                <button
+                  onClick={() => handleTogglePinStandard(activeTabMenu.fileId)}
+                  className="px-3.5 py-1.5 text-left text-zinc-300 hover:bg-zinc-800/40 hover:text-white transition flex items-center space-x-2"
+                >
+                  <span>{isPinnedStandard ? 'Unpin Standard' : 'Pin Standard'}</span>
+                </button>
+              </>
+            );
+          })()}
 
           <button
             onClick={() => handleDuplicate(activeTabMenu.fileId)}
@@ -1402,10 +1501,19 @@ function CodeEditorInner({
 
           <button
             onClick={() => handleCloseTab(activeTabMenu.fileId)}
-            className="px-3.5 py-1.5 text-left text-rose-500 hover:bg-rose-500/10 transition flex items-center space-x-2 font-semibold"
+            className="px-3.5 py-1.5 text-left text-zinc-300 hover:bg-zinc-800/40 hover:text-white transition flex items-center space-x-2"
           >
-            <span>Close Active Tab</span>
+            <span>Close Tab</span>
           </button>
+
+          {activeFileId && (
+            <button
+              onClick={() => handleCloseTab(activeFileId)}
+              className="px-3.5 py-1.5 text-left text-rose-500 hover:bg-rose-500/10 transition flex items-center space-x-2 font-semibold"
+            >
+              <span>Close Active Tab</span>
+            </button>
+          )}
         </div>
       )}
       {/* Custom Rename Tab GUI modal */}
